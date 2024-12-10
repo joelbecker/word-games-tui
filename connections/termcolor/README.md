@@ -1,0 +1,1 @@
+The `termcolor` module is included with the source code to improve portability.
