@@ -36,13 +36,16 @@ class ConnectionsParser(html.parser.HTMLParser):
 
 def get_connections_puzzle(month: str, day: int):
 
-    connections_html = subprocess.run(['curl', 'https://mashable.com/article/nyt-connections-hint-answer-today-november-3', '>', 'connections.html'], capture_output=True)
-
+    connections_url = 'https://mashable.com/article/nyt-connections-hint-answer-today-{}-{}'.format(month, day)
+    connections_html = subprocess.run(['curl', connections_url, '>', 'connections.html'], capture_output=True)
+    
     parser = ConnectionsParser()
     parser.feed(connections_html.stdout.decode('utf-8'))
 
     html_lists = parser.ul_contents
     word_list = [html.unescape(l) for l in html_lists if any(is_word_list(s) for s in l)][0]
+
+    # TODO: Parsing fails for Dec 6th puzzle, likely because of special characters in the category name
 
     categories = {
         'yellow': word_list[0],

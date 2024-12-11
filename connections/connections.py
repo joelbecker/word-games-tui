@@ -8,6 +8,8 @@ from scrape import get_connections_puzzle
 from utils import clear_display, getch, justify, print_center
 from datetime import datetime
 
+# TODO: Remove dependency on enum and dataclass for Python 3.2 compatibility
+
 class CategoryColor(IntEnum):
     YELLOW = 0
     GREEN = 1
@@ -210,8 +212,8 @@ def main(words, categories):
         state.update_display()
 
 if __name__ == "__main__":
-    month = datetime.now().strftime("%B")
-    day = datetime.now().day
+    month = datetime.now().strftime("%B").lower()
+    day = datetime.now().day-9
 
     scraped_categories, scraped_words = get_connections_puzzle(month, day)
     
@@ -227,4 +229,4 @@ if __name__ == "__main__":
         for word in word_list:
             words.append(Word(word, categories[color]))
 
-    main(words, categories)
+    main(words, categories.values())
