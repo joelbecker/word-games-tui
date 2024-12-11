@@ -169,11 +169,11 @@ class ConnectionsApp:
             self.update_display()
             exit()
         elif score == 4:
-            self.message = f"Correct! Guesses left: {self.guesses}"
+            self.message = "Correct! Guesses left: {}".format(self.guesses)
         elif score == 3:
-            self.message = f"One away! Guesses left: {self.guesses}"
+            self.message = "One away! Guesses left: {}".format(self.guesses)
         else:
-            self.message = f"Incorrect. Guesses left: {self.guesses}"
+            self.message = "Incorrect. Guesses left: {}".format(self.guesses)
 
     def shuffle(self):
         self.order_seed = randint(4, 100)
