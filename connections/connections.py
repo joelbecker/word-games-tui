@@ -1,26 +1,31 @@
 from textwrap import TextWrapper, wrap
 from termcolor import colored
 from random import randint
-from enum import IntEnum
 
 from scrape import get_connections_puzzle
 from utils import clear_display, getch, justify, print_center
 from datetime import datetime
 
-# TODO: Remove dependency on enum and dataclass for Python 3.2 compatibility
 
-class CategoryColor(IntEnum):
-    YELLOW = 0
-    GREEN = 1
-    BLUE = 2
-    PURPLE = 3
+class CategoryColor:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
 
     def __str__(self):
         return self.name.lower()
     
+    def __cmp__(self, other):
+        return self.value - other.value
+
     @property
     def term_name(self):
         return 'magenta' if self.name == 'PURPLE' else str(self)
+
+CategoryColor.YELLOW = CategoryColor("YELLOW", 0)
+CategoryColor.GREEN = CategoryColor("GREEN", 1)
+CategoryColor.BLUE = CategoryColor("BLUE", 2)
+CategoryColor.PURPLE = CategoryColor("PURPLE", 3)
 
 
 class Category:
@@ -177,7 +182,7 @@ class ConnectionsApp:
         self.words = sorted(
             self.words, 
             key=lambda x: (
-                x.category.color if x.is_solved
+                x.category.color.value if x.is_solved
                 else hash(x.word) % self.order_seed + 4
             )
         )
