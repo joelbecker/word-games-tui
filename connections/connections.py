@@ -1,5 +1,4 @@
 from textwrap import TextWrapper, wrap
-from dataclasses import dataclass
 from termcolor import colored
 from random import randint
 from enum import IntEnum
@@ -24,7 +23,6 @@ class CategoryColor(IntEnum):
         return 'magenta' if self.name == 'PURPLE' else str(self)
 
 
-@dataclass
 class Category:
     def __init__(self, color: CategoryColor, description: str, is_solved=False):
         self.color = color
@@ -38,14 +36,14 @@ class Category:
         return self.color == value.color
     
 
-@dataclass
 class Word:
-    word: str
-    category: Category
-    is_selected: bool = False
+    def __init__(self, word, category, is_selected=False):
+        self.word = word
+        self.category = category
+        self.is_selected = is_selected
 
     @property
-    def is_solved(self) -> bool:
+    def is_solved(self):
         return self.category.is_solved
 
     def selected(self, value=None):
@@ -56,7 +54,6 @@ class Word:
         )
     
     def formatted(self, is_cursor=False, max_width=70):
-        
         if self.is_solved:
             prefix = "| "
         elif self.is_selected:
@@ -68,8 +65,8 @@ class Word:
         
         w = TextWrapper(width=max_width, max_lines=1, placeholder="...")
         text = w.fill(prefix + self.word.upper())
-        on_color="on_dark_grey" if is_cursor and not self.is_solved else None
-        attrs=["bold"] if self.is_selected else None
+        on_color = "on_dark_grey" if is_cursor and not self.is_solved else None
+        attrs = ["bold"] if self.is_selected else None
 
         return colored(
             text,
