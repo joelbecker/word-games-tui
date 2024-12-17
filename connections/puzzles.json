@@ -1,0 +1,36 @@
+{
+    "2024-12-17": {
+        "categories": {
+            "yellow": "Intrepidity",
+            "green": "Road",
+            "blue": "Kinds of Paper",
+            "purple": "Kinds of Tennis Courts"
+        },
+        "words": {
+            "yellow": [
+                "grit",
+                "heart",
+                "nerve",
+                "pluck"
+            ],
+            "green": [
+                "artery",
+                "avenue",
+                "drag",
+                "drive"
+            ],
+            "blue": [
+                "construction",
+                "graph",
+                "tissue",
+                "wax"
+            ],
+            "purple": [
+                "carpet",
+                "clay",
+                "grass",
+                "hard"
+            ]
+        }
+    }
+}
