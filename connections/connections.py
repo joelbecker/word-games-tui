@@ -90,8 +90,8 @@ def print_display(words, message = "", cursor=0):
         index = i * 4
         category = words[index].category
         if category.is_solved:
-            wrapped = wrap(text=category.description, width=column_width, max_lines=4)
-            for j in range(len(wrapped)):
+            wrapped = wrap(text=category.description, width=column_width)
+            for j in range(min(len(wrapped), 4)):
                 description_column[i*4+j] = wrapped[j]
 
     clear_display()
