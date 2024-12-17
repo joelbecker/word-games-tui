@@ -69,7 +69,7 @@ class Word:
         else:
             prefix = "  "
         
-        w = TextWrapper(width=max_width, max_lines=1, placeholder="...")
+        w = TextWrapper(width=max_width, placeholder="...")
         text = w.fill(prefix + self.word.upper())
         on_color = "on_dark_grey" if is_cursor and not self.is_solved else None
         attrs = ["bold"] if self.is_selected else None
