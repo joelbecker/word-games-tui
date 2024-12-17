@@ -2,9 +2,10 @@ from textwrap import TextWrapper, wrap
 from termcolor import colored
 from random import randint
 
-from scrape import get_connections_puzzle
+from scrape import PUZZLE_FILE
 from utils import clear_display, getch, justify, print_center
 from datetime import datetime
+import json
 
 
 class CategoryColor:
@@ -214,20 +215,24 @@ def main(words, categories):
         state.update_display()
 
 if __name__ == "__main__":
-    month = datetime.now().strftime("%B").lower()
-    day = datetime.now().day-9
-
-    scraped_categories, scraped_words = get_connections_puzzle(month, day)
+    try:
+        with open(PUZZLE_FILE, 'r') as f:
+            puzzles = json.load(f)
+    except:
+        print("Failed to load puzzle file.")
+        exit()
     
+    puzzle = puzzles[max(puzzles.keys())]
+    categories, category_words = puzzle["categories"], puzzle["words"]
     categories = {
-        "yellow": Category(CategoryColor.YELLOW, scraped_categories["yellow"]),
-        "green": Category(CategoryColor.GREEN, scraped_categories["green"]),
-        "blue": Category(CategoryColor.BLUE, scraped_categories["blue"]),
-        "purple": Category(CategoryColor.PURPLE, scraped_categories["purple"]),
+        "yellow": Category(CategoryColor.YELLOW, categories["yellow"]),
+        "green": Category(CategoryColor.GREEN, categories["green"]),
+        "blue": Category(CategoryColor.BLUE, categories["blue"]),
+        "purple": Category(CategoryColor.PURPLE, categories["purple"]),
     }
 
     words = []
-    for color, word_list in scraped_words.items():
+    for color, word_list in category_words.items():
         for word in word_list:
             words.append(Word(word, categories[color]))
 
