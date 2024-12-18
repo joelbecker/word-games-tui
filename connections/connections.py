@@ -158,17 +158,33 @@ def print_display(words, message="", cursor=0, full_update=True):
             justify(message, block=column_width*2, width=column_width*2, justify="center"),
             WHITE
         )
+
+        controls1 = "[k]up [j]down [s]elect"
+        controls2 = "[g]uess [r]eshuffle [q]uit"
+        is_control_message_split = len(controls1) + len(controls2) > COLS - 2
         stdscr.addstr(
             len(words) + 3 + vertical_padding,
             0,
             justify(
-                "[k]up [j]down [s]elect [g]uess [r]eshuffle [q]uit",
+                controls1 if is_control_message_split else "{} {}".format(controls1, controls2),
                 block=column_width*2,
                 width=column_width*2,
                 justify="center"
             ),
             GRAY
         )
+        if is_control_message_split:
+            stdscr.addstr(
+                len(words) + 4 + vertical_padding,
+                0,
+                justify(
+                    controls2,
+                    block=column_width*2,
+                    width=column_width*2,
+                    justify="center"
+                ),
+                GRAY
+            )
     
     stdscr.refresh()
 
