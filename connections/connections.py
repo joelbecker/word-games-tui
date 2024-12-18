@@ -1,12 +1,22 @@
-from textwrap import TextWrapper, wrap
-from termcolor import colored
-from random import randint
-
-from scrape import PUZZLE_FILE
-from utils import clear_display, getch, justify, print_center
-from datetime import datetime
 import json
+import curses
+from random import randint
+from textwrap import TextWrapper, wrap
 
+from utils import justify
+from scrape import PUZZLE_FILE
+
+stdscr = curses.initscr()
+curses.start_color()
+curses.use_default_colors()
+
+# Define color pairs
+curses.init_pair(1, curses.COLOR_MAGENTA, -1)
+curses.init_pair(2, curses.COLOR_YELLOW, -1)
+curses.init_pair(3, curses.COLOR_GREEN, -1)
+curses.init_pair(4, curses.COLOR_BLUE, -1)
+curses.init_pair(5, curses.COLOR_WHITE, -1)
+curses.init_pair(6, curses.COLOR_WHITE, 8)
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -59,7 +69,7 @@ class Word:
             value if value is not None else not self.is_selected
         )
     
-    def formatted(self, is_cursor=False, max_width=70):
+    def format(self, is_cursor=False, max_width=70):
         if self.is_solved:
             prefix = "| "
         elif self.is_selected:
@@ -71,19 +81,22 @@ class Word:
         
         w = TextWrapper(width=max_width)
         text = w.fill(prefix + self.word.upper())
-        on_color = "on_dark_grey" if is_cursor and not self.is_solved else None
-        attrs = ["bold"] if self.is_selected else None
+        return text
 
-        return colored(
-            text,
-            color=self.category.color.term_name if self.is_solved else None,
-            on_color=on_color,
-            attrs=attrs
-        )
+    def solved_color(self, is_cursor=False):
+        color = {
+            "yellow": curses.color_pair(2),
+            "green": curses.color_pair(3),
+            "blue": curses.color_pair(4),
+            "purple": curses.color_pair(1)
+        }.get(self.category.color.name.lower(), None)
+        return color if self.is_solved else None
+
+    def attributes(self):
+        return curses.A_BOLD if self.is_selected else curses.A_NORMAL
 
 
-def print_display(words, message = "", cursor=0):
-    
+def print_display(words, message="", cursor=0):
     column_width = 25
     description_column = [""] * len(words)
     for i in range(4):
@@ -94,24 +107,37 @@ def print_display(words, message = "", cursor=0):
             for j in range(min(len(wrapped), 4)):
                 description_column[i*4+j] = wrapped[j]
 
-    clear_display()
+    stdscr.clear()
 
-    for i in range(len(words)):
-        formatted_desc = colored(description_column[i], color=words[i].category.color.term_name)
-        formatted_word = words[i].formatted(is_cursor=(i == cursor), max_width=column_width)
-        
-        print_center(
-            justify(formatted_desc, block=column_width, width=column_width, justify="right")
-            + " "
-            + justify(formatted_word, block=column_width, width=column_width, justify="left"),
-            block=51,
-            width=51,
+    for i in range(len(words)):  # Adjust to fit within the terminal window
+        word = words[i]
+        is_cursor = (i == cursor)
+        solved_color_pair = word.solved_color()
+        unsolved_color_pair = curses.color_pair(6) if is_cursor else curses.color_pair(5)
+        formatted_desc = justify(
+            description_column[i],
+            block=column_width,
+            width=column_width,
+            justify="right"
+        ) + " "
+        formatted_word = word.format(
+            is_cursor=is_cursor,
+            max_width=column_width
+        ).upper()
+        stdscr.addstr(
+            i + 1, 0,
+            formatted_desc,
+            (solved_color_pair or curses.color_pair(5))
         )
-    print()
-    print_center(message)
-    print()
-    print_center("k-up j-down s-select g-guess r-shuffle q-quit")
-    print()
+        stdscr.addstr(
+            i + 1, len(formatted_desc),
+            formatted_word,
+            (solved_color_pair or unsolved_color_pair) | word.attributes()
+        )
+    
+    stdscr.addstr(len(words) + 2, 0, justify(message, block=column_width*2, width=column_width*2, justify="center"))
+    stdscr.addstr(len(words) + 3, 0, "k-up j-down s-select g-guess r-shuffle q-quit")
+    stdscr.refresh()
 
 
 class ConnectionsApp:
@@ -194,25 +220,28 @@ def main(words, categories):
     state = ConnectionsApp(words, categories)
     state.update_display()
 
-    while True:
-        key = getch()
+    try:
+        while True:
+            key = chr(stdscr.getch())
 
-        if key == 'k':
-            state.up()
-        elif key == 'j':
-            state.down()
-        elif key == 's':
-            state.select()
-        elif key == 'g':
-            state.guess()
-        elif key == 'r':
-            state.shuffle()
-        elif key == 'q':
-            exit()
-        else:
-            continue
+            if key == 'k':
+                state.up()
+            elif key == 'j':
+                state.down()
+            elif key == 's':
+                state.select()
+            elif key == 'g':
+                state.guess()
+            elif key == 'r':
+                state.shuffle()
+            elif key == 'q':
+                break
+            else:
+                continue
 
-        state.update_display()
+            state.update_display()
+    finally:
+        curses.endwin()
 
 if __name__ == "__main__":
     try:
@@ -236,4 +265,7 @@ if __name__ == "__main__":
         for word in word_list:
             words.append(Word(word, categories[color]))
 
-    main(words, categories.values())
+    try:
+        main(words, categories.values())
+    finally:
+        curses.endwin()
