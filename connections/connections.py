@@ -16,6 +16,8 @@ for i in range(0, curses.COLORS-1):
         curses.init_pair(i + 1, i, -1)
 
 ROWS, COLS = stdscr.getmaxyx()
+ROWS = min(ROWS, 24)
+COLS = min(COLS, 60)
 
 # Define color pairs
 PURPLE = curses.color_pair(170)
