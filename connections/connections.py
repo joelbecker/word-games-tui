@@ -18,7 +18,6 @@ curses.init_pair(2, curses.COLOR_YELLOW, -1)
 curses.init_pair(3, curses.COLOR_GREEN, -1)
 curses.init_pair(4, curses.COLOR_BLUE, -1)
 curses.init_pair(5, curses.COLOR_WHITE, -1)
-curses.init_pair(6, curses.COLOR_WHITE, 8)
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -74,10 +73,10 @@ class Word:
     def format(self, is_cursor=False, max_width=70):
         if self.is_solved:
             prefix = "| "
-        elif self.is_selected:
-            prefix = "* "
         elif is_cursor:
             prefix = "> "
+        elif self.is_selected:
+            prefix = "* "
         else:
             prefix = "  "
         
@@ -119,7 +118,7 @@ def print_display(words, message="", cursor=0, full_update=True):
         word = words[i]
         is_cursor = (i == cursor)
         solved_color_pair = word.solved_color()
-        unsolved_color_pair = curses.color_pair(6) if is_cursor else curses.color_pair(5)
+        unsolved_color_pair = (curses.color_pair(5) | curses.A_REVERSE) if is_cursor else curses.color_pair(5)
         formatted_desc = justify(
             description_column[i],
             block=column_width,
