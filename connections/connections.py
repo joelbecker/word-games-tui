@@ -177,7 +177,7 @@ class ConnectionsApp:
     def __init__(self, words, categories):
         self.words = words
         self.categories = categories
-        self.guesses = 6
+        self.guesses = 8
         self.cursor = 0
         self.order_seed = randint(4, 100)
         self.message = "Welcome to Connections!"
