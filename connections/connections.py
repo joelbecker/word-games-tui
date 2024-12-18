@@ -12,12 +12,17 @@ curses.use_default_colors()
 curses.curs_set(0)
 curses.noecho()
 
+for i in range(0, curses.COLORS-1):
+        curses.init_pair(i + 1, i, -1)
+
+ROWS, COLS = stdscr.getmaxyx()
+
 # Define color pairs
-curses.init_pair(1, curses.COLOR_MAGENTA, -1)
-curses.init_pair(2, curses.COLOR_YELLOW, -1)
-curses.init_pair(3, curses.COLOR_GREEN, -1)
-curses.init_pair(4, curses.COLOR_BLUE, -1)
-curses.init_pair(5, curses.COLOR_WHITE, -1)
+PURPLE = curses.color_pair(170)
+YELLOW = curses.color_pair(227)
+GREEN = curses.color_pair(43)
+BLUE = curses.color_pair(26)
+WHITE = curses.color_pair(253)
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -84,12 +89,12 @@ class Word:
         text = w.fill(prefix + self.word.upper())
         return text
 
-    def solved_color(self, is_cursor=False):
+    def solved_color(self):
         color = {
-            "yellow": curses.color_pair(2),
-            "green": curses.color_pair(3),
-            "blue": curses.color_pair(4),
-            "purple": curses.color_pair(1)
+            "yellow": YELLOW,
+            "green": GREEN,
+            "blue": BLUE,
+            "purple": PURPLE
         }.get(self.category.color.name.lower(), None)
         return color if self.is_solved else None
 
@@ -98,7 +103,8 @@ class Word:
 
 
 def print_display(words, message="", cursor=0, full_update=True):
-    column_width = 25
+    column_width = COLS // 2
+    vertical_padding = (ROWS - (len(words) + 4)) // 2
     description_column = [""] * len(words)
     if full_update:
         for i in range(4):
@@ -118,7 +124,7 @@ def print_display(words, message="", cursor=0, full_update=True):
         word = words[i]
         is_cursor = (i == cursor)
         solved_color_pair = word.solved_color()
-        unsolved_color_pair = (curses.color_pair(5) | curses.A_REVERSE) if is_cursor else curses.color_pair(5)
+        unsolved_color_pair = (WHITE | curses.A_REVERSE) if is_cursor else WHITE
         formatted_desc = justify(
             description_column[i],
             block=column_width,
@@ -130,19 +136,34 @@ def print_display(words, message="", cursor=0, full_update=True):
             max_width=column_width
         ).upper()
         stdscr.addstr(
-            i + 1, 0,
+            i + 1 + vertical_padding,
+            0,
             formatted_desc,
-            (solved_color_pair or curses.color_pair(5))
+            (solved_color_pair or WHITE)
         )
         stdscr.addstr(
-            i + 1, len(formatted_desc),
+            i + 1 + vertical_padding,
+            len(formatted_desc),
             formatted_word,
             (solved_color_pair or unsolved_color_pair) | word.attributes()
         )
     
     if full_update:
-        stdscr.addstr(len(words) + 2, 0, justify(message, block=column_width*2, width=column_width*2, justify="center"))
-        stdscr.addstr(len(words) + 3, 0, justify("k-up j-down s-select g-guess r-shuffle q-quit", block=column_width*2, width=column_width*2, justify="center"))
+        stdscr.addstr(
+            len(words) + 2 + vertical_padding,
+            0,
+            justify(message, block=column_width*2, width=column_width*2, justify="center")
+        )
+        stdscr.addstr(
+            len(words) + 3 + vertical_padding,
+            0,
+            justify(
+                "k-up j-down s-select g-guess r-shuffle q-quit",
+                block=column_width*2,
+                width=column_width*2,
+                justify="center"
+            )
+        )
     
     stdscr.refresh()
 
@@ -164,18 +185,24 @@ class ConnectionsApp:
         return max(categories.count(c) for c in categories)
 
     def up(self):
-        self.cursor = max(
-            0,
-            self.cursor - 1,
-            min(i for i in range(len(self.words)) if not self.words[i].is_solved)
-        )
+        unsolved = [i for i in range(len(self.words)) if not self.words[i].is_solved]
+        if unsolved:
+            self.cursor = max(
+                0,
+                self.cursor - 1,
+                min(unsolved)
+            )
 
     def down(self):
-        self.cursor = min(
-            max(i for i in range(len(self.words)) if not self.words[i].is_solved),
-            self.cursor + 1,
-            len(self.words) - 1
-        )
+        unsolved = [i for i in range(len(self.words)) if not self.words[i].is_solved]
+        if unsolved:
+            self.cursor = max(
+                min(
+                    self.cursor + 1,
+                    len(self.words) - 1
+                ),
+                min(unsolved),
+            )
 
     def select(self):
         if self.words[self.cursor].is_selected or len(self.selected_words()) < 4:
@@ -253,6 +280,12 @@ def main(words, categories):
                 state.update_display(full_update=True)
             elif key == 'r':
                 state.shuffle()
+                state.update_display(full_update=True)
+            elif key == '1':
+                state.message = "Cheat code activated."
+                for w in state.words:
+                    w.category.solved()
+                state.sort()
                 state.update_display(full_update=True)
             elif key == 'q':
                 break
