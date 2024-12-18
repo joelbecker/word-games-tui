@@ -32,5 +32,39 @@
                 "hard"
             ]
         }
+    },
+    "2024-12-18": {
+        "categories": {
+            "yellow": "Deal With",
+            "green": "Styles of Beer",
+            "blue": "Investment Verbs",
+            "purple": "___Dome"
+        },
+        "words": {
+            "yellow": [
+                "field",
+                "handle",
+                "manage",
+                "tackle"
+            ],
+            "green": [
+                "bitter",
+                "bock",
+                "sour",
+                "stout"
+            ],
+            "blue": [
+                "hedge",
+                "hold",
+                "short",
+                "trade"
+            ],
+            "purple": [
+                "capitol",
+                "chrome",
+                "onion",
+                "teapot"
+            ]
+        }
     }
 }
