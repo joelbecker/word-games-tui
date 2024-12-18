@@ -107,7 +107,7 @@ class Word:
 
 def print_display(words, message="", cursor=0, full_update=True):
     column_width = COLS // 2
-    vertical_padding = (ROWS - (len(words) + 4)) // 2
+    vertical_padding = (ROWS - (len(words) + 5)) // 2
     description_column = [""] * len(words)
     if full_update:
         for i in range(4):
