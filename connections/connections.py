@@ -221,6 +221,10 @@ class ConnectionsApp:
                 else hash(x.word) % self.order_seed + 4
             )
         )
+        self.cursor = max(
+            self.cursor,
+            next((i for i, word in enumerate(self.words) if not word.is_solved), 0)
+        )
 
     def update_display(self, full_update=True):
         print_display(self.words, self.message, self.cursor, full_update=full_update)
