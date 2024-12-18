@@ -9,6 +9,8 @@ from scrape import PUZZLE_FILE
 stdscr = curses.initscr()
 curses.start_color()
 curses.use_default_colors()
+curses.curs_set(0)
+curses.noecho()
 
 # Define color pairs
 curses.init_pair(1, curses.COLOR_MAGENTA, -1)
@@ -96,20 +98,24 @@ class Word:
         return curses.A_BOLD if self.is_selected else curses.A_NORMAL
 
 
-def print_display(words, message="", cursor=0):
+def print_display(words, message="", cursor=0, full_update=True):
     column_width = 25
     description_column = [""] * len(words)
-    for i in range(4):
-        index = i * 4
-        category = words[index].category
-        if category.is_solved:
-            wrapped = wrap(text=category.description, width=column_width)
-            for j in range(min(len(wrapped), 4)):
-                description_column[i*4+j] = wrapped[j]
+    if full_update:
+        for i in range(4):
+            index = i * 4
+            category = words[index].category
+            if category.is_solved:
+                wrapped = wrap(text=category.description, width=column_width)
+                for j in range(min(len(wrapped), 4)):
+                    description_column[i*4+j] = wrapped[j]
+    if full_update:
+        stdscr.clear()
 
-    stdscr.clear()
+    start_index = 0 if full_update else max(0, cursor - 1)
+    end_index = len(words) if full_update else min(len(words), cursor + 2)
 
-    for i in range(len(words)):  # Adjust to fit within the terminal window
+    for i in range(start_index, end_index):  # Adjust to fit within the terminal window
         word = words[i]
         is_cursor = (i == cursor)
         solved_color_pair = word.solved_color()
@@ -135,8 +141,10 @@ def print_display(words, message="", cursor=0):
             (solved_color_pair or unsolved_color_pair) | word.attributes()
         )
     
-    stdscr.addstr(len(words) + 2, 0, justify(message, block=column_width*2, width=column_width*2, justify="center"))
-    stdscr.addstr(len(words) + 3, 0, "k-up j-down s-select g-guess r-shuffle q-quit")
+    if full_update:
+        stdscr.addstr(len(words) + 2, 0, justify(message, block=column_width*2, width=column_width*2, justify="center"))
+        stdscr.addstr(len(words) + 3, 0, justify("k-up j-down s-select g-guess r-shuffle q-quit", block=column_width*2, width=column_width*2, justify="center"))
+    
     stdscr.refresh()
 
 
@@ -179,6 +187,7 @@ class ConnectionsApp:
             score = self.score_guess()
             if score == 4:
                 self.selected_words()[0].category.solved()
+                self.sort()
             self.words = [w.selected(False) for w in self.words]
             self.guesses -= 1
         else:
@@ -203,8 +212,9 @@ class ConnectionsApp:
 
     def shuffle(self):
         self.order_seed = randint(4, 100)
+        self.sort()
 
-    def update_display(self):
+    def sort(self):
         self.words = sorted(
             self.words, 
             key=lambda x: (
@@ -212,12 +222,15 @@ class ConnectionsApp:
                 else hash(x.word) % self.order_seed + 4
             )
         )
-        print_display(self.words, self.message, self.cursor)
+
+    def update_display(self, full_update=True):
+        print_display(self.words, self.message, self.cursor, full_update=full_update)
 
 
 def main(words, categories):
     state = ConnectionsApp(words, categories)
-    state.update_display()
+    state.sort()
+    state.update_display(full_update=True)
 
     try:
         while True:
@@ -225,20 +238,23 @@ def main(words, categories):
 
             if key == 'k':
                 state.up()
+                state.update_display(full_update=False)
             elif key == 'j':
                 state.down()
+                state.update_display(full_update=False)
             elif key == 's':
                 state.select()
+                state.update_display(full_update=False)
             elif key == 'g':
                 state.guess()
+                state.update_display(full_update=True)
             elif key == 'r':
                 state.shuffle()
+                state.update_display(full_update=True)
             elif key == 'q':
                 break
             else:
                 continue
-
-            state.update_display()
     finally:
         curses.endwin()
 
