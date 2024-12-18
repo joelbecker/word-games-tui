@@ -25,6 +25,7 @@ YELLOW = curses.color_pair(227)
 GREEN = curses.color_pair(43)
 BLUE = curses.color_pair(26)
 WHITE = curses.color_pair(253)
+GRAY = curses.color_pair(240)
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -154,17 +155,19 @@ def print_display(words, message="", cursor=0, full_update=True):
         stdscr.addstr(
             len(words) + 2 + vertical_padding,
             0,
-            justify(message, block=column_width*2, width=column_width*2, justify="center")
+            justify(message, block=column_width*2, width=column_width*2, justify="center"),
+            WHITE
         )
         stdscr.addstr(
             len(words) + 3 + vertical_padding,
             0,
             justify(
-                "k-up j-down s-select g-guess r-shuffle q-quit",
+                "[k]up [j]down [s]elect [g]uess [r]eshuffle [q]uit",
                 block=column_width*2,
                 width=column_width*2,
                 justify="center"
-            )
+            ),
+            GRAY
         )
     
     stdscr.refresh()
