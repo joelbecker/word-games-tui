@@ -188,7 +188,6 @@ class ConnectionsApp:
         if all(w.is_solved for w in words):
             self.message = "You win!"
             self.update_display()
-            exit()
         elif self.guesses == 0:
             for c in self.categories:
                 c.solved()
