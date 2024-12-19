@@ -66,5 +66,39 @@
                 "teapot"
             ]
         }
+    },
+    "2024-12-19": {
+        "categories": {
+            "yellow": "Defer",
+            "green": "Bar Fixtures",
+            "blue": "Watercraft",
+            "purple": "Seen in \"Donkey Kong\""
+        },
+        "words": {
+            "yellow": [
+                "delay",
+                "postpone",
+                "shelve",
+                "table"
+            ],
+            "green": [
+                "counter",
+                "keg",
+                "stool",
+                "tap"
+            ],
+            "blue": [
+                "barge",
+                "junk",
+                "sub",
+                "tug"
+            ],
+            "purple": [
+                "barrel",
+                "gorilla",
+                "hammer",
+                "ladder"
+            ]
+        }
     }
 }
