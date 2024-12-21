@@ -126,6 +126,9 @@ def compare_options(puzzle):
 
     return "\n".join(["   ".join(t) for t in zip(*puzzles)])
 
+def clear_display():
+    print("\033c")
+
 puzzle_1 = """
 .ROSE
 COUPS
@@ -170,11 +173,15 @@ REDWINE
 ..DYE..
 """
 
-print(compare_options(parse_puzzle(puzzle_1)))
-print(compare_options(parse_puzzle(puzzle_2)))
-print(compare_options(parse_puzzle(puzzle_3)))
-print(compare_options(parse_puzzle(puzzle_4)))
-print(compare_options(parse_puzzle(puzzle_5)))
+examples = [puzzle_1, puzzle_2, puzzle_3, puzzle_4, puzzle_5]
 
-# From these tests I think that `lambda c: termcolor.colored(c, GREY))` is the best option,
-# it gives a distinct border and doesn't look bad/weird in any puzzles.
+for i in range(len(examples)):
+    clear_display()
+    print(f"Example {i + 1}/{len(examples)}")
+    print(
+        CrosswordGrid(
+            parse_puzzle(examples[i]),
+            null_charcter_fn=lambda c: termcolor.colored(c, GREY)
+        )
+    )
+    input()
