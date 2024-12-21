@@ -2,7 +2,7 @@ import termcolor
 from typing import Iterable, Callable
 
 WHITE = "white"
-GREY = "grey"
+GREY = "dark_grey"
 BLUE = "blue"
 YELLOW = "yellow"
 
