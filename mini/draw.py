@@ -236,3 +236,14 @@ REDWINE
 """
 
 examples = [puzzle_1, puzzle_2, puzzle_3, puzzle_4, puzzle_5]
+
+for i in range(len(examples)):
+    clear_display()
+    print(f"Example {i + 1}/{len(examples)}")
+    print(
+        CrosswordGrid(
+            parse_puzzle(examples[i]),
+            null_charcter_fn=lambda c: termcolor.colored(c, GREY)
+        )
+    )
+    input()
