@@ -1,5 +1,9 @@
 import termcolor
 from typing import Iterable, Callable
+from itertools import cycle
+import sys
+import termios
+import tty
 
 WHITE = "white"
 GREY = "dark_grey"
@@ -19,11 +23,20 @@ class CrosswordGrid:
         
         # state
         self.cursor_h = True
-        valid_starting_cells = [(i, j) for i in range(self.rows) for j in range(self.cols) if cells[i][j] is not None]
-        self.cursor_row, self.cursor_col = min(valid_starting_cells)
+        self.valid_cells = cycle(
+            sorted([
+                (i, j) for i in range(self.rows)
+                for j in range(self.cols)
+                if cells[i][j] is not None
+            ])
+        )
+        self.cursor_row, self.cursor_col = next(self.valid_cells)
         
         # options
         self.null_charcter_fn = null_charcter_fn
+
+    def is_filled(self, i: int, j: int) -> bool:
+        return not self.is_out_of_bounds(i, j) and self.cells[i][j]
 
     def is_cursor_cell(self, i: int, j: int) -> bool:
         return i == self.cursor_row and j == self.cursor_col
@@ -111,6 +124,57 @@ class CrosswordGrid:
         return result
     
 
+class IndexController:
+
+    def __init__(self, puzzle: CrosswordGrid):
+        self.puzzle = puzzle
+
+    def cycle_cell(self, auto_skip: bool = True, condition: Callable[[int, int], bool] = None):
+        while True:
+            next_cell = next(self.puzzle.valid_cells)
+            
+            if next_cell == min(self.puzzle.valid_cells):
+                # Reset cycle direction
+                if self.puzzle.cursor_h:
+                    sort_key = lambda cell: (cell[0], cell[1])
+                else:
+                    sort_key = lambda cell: (cell[1], cell[0])
+                self.puzzle.valid_cells = cycle(
+                    sorted(
+                        self.puzzle.valid_cells,
+                        key=sort_key
+                    )
+                )
+                
+                # Toggle direction
+                self.puzzle.cursor_h = not self.puzzle.cursor_h
+                
+                # Recalculate next cell
+                next_cell = self.puzzle.valid_cells
+
+            if (not auto_skip or not self.puzzle.is_filled(*next_cell)) and condition(*next_cell):
+                self.puzzle.cursor_row, self.puzzle.cursor_col = next_cell
+                return next_cell
+            elif next_cell == (self.puzzle.cursor_row, self.puzzle.cursor_col):
+                # If we have cycle through all the cells on auto_skip and none are empty
+                return self.cycle_cell(
+                    auto_skip=False,
+                    condition=condition
+                )
+            else:
+                continue
+
+
+    def cycle_lane(self, auto_skip: bool = True):
+        if self.puzzle.cursor_h:
+            next_lane_condition = lambda i, j: i != self.puzzle.cursor_row
+        else:
+            next_lane_condition = lambda i, j: j != self.puzzle.cursor_col
+        return self.cycle_cell(
+            auto_skip,
+            next_lane_condition
+        )
+
 def parse_puzzle(s: str) -> list[list[str]]:
     return [[c if c.isalpha() else None for c in list(row)] for row in s.strip().split("\n")]
 
@@ -172,14 +236,3 @@ REDWINE
 """
 
 examples = [puzzle_1, puzzle_2, puzzle_3, puzzle_4, puzzle_5]
-
-for i in range(len(examples)):
-    clear_display()
-    print(f"Example {i + 1}/{len(examples)}")
-    print(
-        CrosswordGrid(
-            parse_puzzle(examples[i]),
-            null_charcter_fn=lambda c: termcolor.colored(c, GREY)
-        )
-    )
-    input()
