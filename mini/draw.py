@@ -6,8 +6,6 @@ GREY = "grey"
 BLUE = "blue"
 YELLOW = "yellow"
 
-type BoolAggrFn = Callable[[Iterable[bool]], bool]
-
 class CrosswordGrid:
 
     def __init__(self, cells: list[list[str]], null_charcter_fn: Callable[[chr], str] = None) -> None:
@@ -43,16 +41,16 @@ class CrosswordGrid:
     def is_out_of_bounds(self, i: int, j: int) -> bool:
         return i < 0 or j < 0 or i >= self.rows or j >= self.cols or self.cells[i][j] is None
 
-    def _check_coordinates(self, coords: list[tuple[int, int]], f: Callable[[int, int], bool], b: BoolAggrFn):
+    def _check_coordinates(self, coords: list[tuple[int, int]], f: Callable[[int, int], bool], b: Callable[[Iterable[bool]], bool]):
         return b(f(i, j) for i, j in coords)
     
-    def check_cursor_cells(self, coords: list[tuple[int, int]], b: BoolAggrFn = any) -> bool:
+    def check_cursor_cells(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
         return self._check_coordinates(coords, self.is_cursor_cell, b)
     
-    def check_cursor_lines(self, coords: list[tuple[int, int]], b: BoolAggrFn = any) -> bool:
+    def check_cursor_lines(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
         return self._check_coordinates(coords, self.is_cursor_line, b)
     
-    def check_out_of_bounds(self, coords: list[tuple[int, int]], b: BoolAggrFn = any) -> bool:
+    def check_out_of_bounds(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
         return self._check_coordinates(coords, self.is_out_of_bounds, b)
 
     def _color_character(self, i: int, j: int, c: str, rel_coords: list[tuple[int, int]]) -> str:
