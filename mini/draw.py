@@ -1,14 +1,13 @@
+from time import sleep
 import termcolor
 from typing import Iterable, Callable
-from itertools import cycle
-import sys
-import termios
-import tty
+from cycle import Cycle
 
 WHITE = "white"
 GREY = "dark_grey"
 BLUE = "blue"
 YELLOW = "yellow"
+
 
 class CrosswordGrid:
 
@@ -23,7 +22,7 @@ class CrosswordGrid:
         
         # state
         self.cursor_h = True
-        self.valid_cells = cycle(
+        self.valid_cells = Cycle(
             sorted([
                 (i, j) for i in range(self.rows)
                 for j in range(self.cols)
@@ -129,17 +128,17 @@ class IndexController:
     def __init__(self, puzzle: CrosswordGrid):
         self.puzzle = puzzle
 
-    def cycle_cell(self, auto_skip: bool = True, condition: Callable[[int, int], bool] = None):
+    def cycle_cell(self, auto_skip: bool = True, condition: Callable[[int, int], bool] = lambda i, j: True):
         while True:
             next_cell = next(self.puzzle.valid_cells)
             
-            if next_cell == min(self.puzzle.valid_cells):
+            if next_cell == self.puzzle.valid_cells.first():
                 # Reset cycle direction
                 if self.puzzle.cursor_h:
-                    sort_key = lambda cell: (cell[0], cell[1])
-                else:
                     sort_key = lambda cell: (cell[1], cell[0])
-                self.puzzle.valid_cells = cycle(
+                else:
+                    sort_key = lambda cell: (cell[0], cell[1])
+                self.puzzle.valid_cells = Cycle(
                     sorted(
                         self.puzzle.valid_cells,
                         key=sort_key
@@ -150,12 +149,12 @@ class IndexController:
                 self.puzzle.cursor_h = not self.puzzle.cursor_h
                 
                 # Recalculate next cell
-                next_cell = self.puzzle.valid_cells
+                next_cell = self.puzzle.valid_cells.next()
 
             if (not auto_skip or not self.puzzle.is_filled(*next_cell)) and condition(*next_cell):
                 self.puzzle.cursor_row, self.puzzle.cursor_col = next_cell
                 return next_cell
-            elif next_cell == (self.puzzle.cursor_row, self.puzzle.cursor_col):
+            elif auto_skip and next_cell == (self.puzzle.cursor_row, self.puzzle.cursor_col):
                 # If we have cycle through all the cells on auto_skip and none are empty
                 return self.cycle_cell(
                     auto_skip=False,
@@ -235,15 +234,29 @@ REDWINE
 ..DYE..
 """
 
-examples = [puzzle_1, puzzle_2, puzzle_3, puzzle_4, puzzle_5]
+examples = [
+    puzzle_1,
+    # puzzle_2,
+    # puzzle_3,
+    # puzzle_4,
+    # puzzle_5
+]
 
 for i in range(len(examples)):
-    clear_display()
-    print(f"Example {i + 1}/{len(examples)}")
-    print(
-        CrosswordGrid(
-            parse_puzzle(examples[i]),
-            null_charcter_fn=lambda c: termcolor.colored(c, GREY)
-        )
+    crossword = CrosswordGrid(
+        parse_puzzle(examples[i]),
+        null_charcter_fn=lambda c: termcolor.colored(c, GREY)
     )
-    input()
+    controller = IndexController(crossword)
+    demo_steps = crossword.rows * crossword.cols * 2
+    for j in range(demo_steps):
+        clear_display()
+        print(f"Example {i + 1}/{len(examples)}")
+        print(f"Iteration {j + 1}/{demo_steps}")
+        print(
+            crossword                
+        )
+        print('min cell', min(crossword.valid_cells))
+        print(list(crossword.valid_cells))
+        controller.cycle_cell(auto_skip=False)
+        sleep(0.5)
