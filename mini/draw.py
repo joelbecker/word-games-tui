@@ -40,7 +40,7 @@ class CrosswordGrid:
     def is_cursor_cell(self, i: int, j: int) -> bool:
         return i == self.cursor_row and j == self.cursor_col
 
-    def is_cursor_line(self, i: int, j: int) -> bool:
+    def is_cursor_lane(self, i: int, j: int) -> bool:
         return (
             i >= 0 and j >= 0 and i < self.rows and j < self.cols
         ) and (
@@ -59,8 +59,8 @@ class CrosswordGrid:
     def check_cursor_cells(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
         return self._check_coordinates(coords, self.is_cursor_cell, b)
     
-    def check_cursor_lines(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
-        return self._check_coordinates(coords, self.is_cursor_line, b)
+    def check_cursor_lanes(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
+        return self._check_coordinates(coords, self.is_cursor_lane, b)
     
     def check_out_of_bounds(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
         return self._check_coordinates(coords, self.is_out_of_bounds, b)
@@ -69,7 +69,7 @@ class CrosswordGrid:
         coords = [(i + di, j + dj) for di, dj in rel_coords]
         is_white = c.isalpha() or self.check_out_of_bounds(coords)
         is_yellow = self.check_cursor_cells(coords)
-        is_blue = self.check_cursor_lines(coords)
+        is_blue = self.check_cursor_lanes(coords)
         is_null = self.check_out_of_bounds(coords, all)
         
         if is_null and self.null_charcter_fn:
@@ -235,11 +235,11 @@ REDWINE
 """
 
 examples = [
-    puzzle_1,
+    # puzzle_1,
     # puzzle_2,
     # puzzle_3,
     # puzzle_4,
-    # puzzle_5
+    puzzle_5
 ]
 
 for i in range(len(examples)):
@@ -252,11 +252,19 @@ for i in range(len(examples)):
     for j in range(demo_steps):
         clear_display()
         print(f"Example {i + 1}/{len(examples)}")
-        print(f"Iteration {j + 1}/{demo_steps}")
-        print(
-            crossword                
-        )
+        print(f"Cell Cycle {j + 1}/{demo_steps}")
+        print(crossword)
         print('min cell', min(crossword.valid_cells))
         print(list(crossword.valid_cells))
         controller.cycle_cell(auto_skip=False)
+        sleep(0.5)
+    demo_steps = (crossword.rows + crossword.cols) * 2
+    for j in range(demo_steps):
+        clear_display()
+        print(f"Example {i + 1}/{len(examples)}")
+        print(f"Lane Cycle {j + 1}/{demo_steps}")
+        print(crossword)
+        print('min cell', min(crossword.valid_cells))
+        print(list(crossword.valid_cells))
+        controller.cycle_lane(auto_skip=False)
         sleep(0.5)
