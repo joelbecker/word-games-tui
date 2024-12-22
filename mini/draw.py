@@ -8,6 +8,7 @@ GREY = "dark_grey"
 BLUE = "blue"
 YELLOW = "yellow"
 
+# TODO: Add cell->word mappings
 
 class CrosswordGrid:
 
@@ -41,6 +42,7 @@ class CrosswordGrid:
         return i == self.cursor_row and j == self.cursor_col
 
     def is_cursor_lane(self, i: int, j: int) -> bool:
+        # TODO: Once cell->word mappings are defined, require that the cursor is on the same word
         return (
             i >= 0 and j >= 0 and i < self.rows and j < self.cols
         ) and (
