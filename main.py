@@ -13,7 +13,7 @@ CONNECTIONS = """
 |___|___|_|_|_|_|___|___|_| |_|___|_|_|___|
 """
 MINI = """
-       _     
+       _     _
  _____|_|___|_|
 |     | |   | |
 |_|_|_|_|_|_|_|
@@ -56,10 +56,10 @@ def main(stdscr):
 
     # Define color pairs
     PURPLE = curses.color_pair(170)
-    YELLOW = curses.color_pair(227)
+    YELLOW = curses.color_pair(185)
     GREEN = curses.color_pair(43)
     BLUE = curses.color_pair(26)
-    RED = curses.color_pair(203)
+    RED = curses.color_pair(175)
     WHITE = curses.color_pair(253)
     GRAY = curses.color_pair(240)
     
@@ -68,11 +68,11 @@ def main(stdscr):
     stdscr.timeout(100)
     
     options = {
-        "WORDLE": GREEN,
-        "CONNECTIONS": PURPLE,
-        "MINI": BLUE,
-        "STRANDS": RED,
-        "SPELLINGBEE": YELLOW
+        WORDLE: GREEN,
+        CONNECTIONS: PURPLE,
+        MINI: BLUE,
+        STRANDS: RED,
+        SPELLINGBEE: YELLOW,
     }
     current_option = 0
 
@@ -80,9 +80,9 @@ def main(stdscr):
         stdscr.clear()
         for idx, option in enumerate(options.keys()):
             if idx == current_option:
-                stdscr.addstr(text_zip(">", option.strip("\n")) + "\n", options[option] | curses.A_BOLD)
+                stdscr.addstr(text_zip(SELECTED, option.strip("\n")) + "\n", options[option] | curses.A_BOLD)
             else:
-                stdscr.addstr(text_zip(" ", option.strip("\n")) + "\n", WHITE)
+                stdscr.addstr(text_zip(NOT_SELECTED, option.strip("\n")) + "\n", WHITE)
         
         stdscr.refresh()
         
