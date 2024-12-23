@@ -88,9 +88,9 @@ def main(stdscr):
         
         key = stdscr.getch()
         
-        if key == curses.KEY_UP:
+        if key == ord('k') or key == curses.KEY_UP:
             current_option = (current_option - 1) % len(options)
-        elif key == curses.KEY_DOWN:
+        elif key == ord('j') or key == curses.KEY_DOWN:
             current_option = (current_option + 1) % len(options)
         elif key == ord('q'):
             break
