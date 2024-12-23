@@ -44,21 +44,45 @@ print(text_zip(NOT_SELECTED, MINI.strip("\n")))
 print(text_zip(NOT_SELECTED, STRANDS.strip("\n")))
 print(text_zip(NOT_SELECTED, SPELLINGBEE.strip("\n")))
 
+
 def main(stdscr):
+    curses.start_color()
+    curses.use_default_colors()
+    curses.curs_set(0)
+    curses.noecho()
+
+    for i in range(0, curses.COLORS-1):
+            curses.init_pair(i + 1, i, -1)
+
+    # Define color pairs
+    PURPLE = curses.color_pair(170)
+    YELLOW = curses.color_pair(227)
+    GREEN = curses.color_pair(43)
+    BLUE = curses.color_pair(26)
+    RED = curses.color_pair(203)
+    WHITE = curses.color_pair(253)
+    GRAY = curses.color_pair(240)
+    
     curses.curs_set(0)
     stdscr.nodelay(1)
     stdscr.timeout(100)
     
-    options = [WORDLE, CONNECTIONS, MINI, STRANDS, SPELLINGBEE]
+    options = {
+        "WORDLE": GREEN,
+        "CONNECTIONS": PURPLE,
+        "MINI": BLUE,
+        "STRANDS": RED,
+        "SPELLINGBEE": YELLOW
+    }
     current_option = 0
 
     while True:
         stdscr.clear()
-        for idx, option in enumerate(options):
+        for idx, option in enumerate(options.keys()):
             if idx == current_option:
-                stdscr.addstr(text_zip(SELECTED, option.strip("\n")) + "\n")
+                stdscr.addstr(text_zip(">", option.strip("\n")) + "\n", options[option] | curses.A_BOLD)
             else:
-                stdscr.addstr(text_zip(NOT_SELECTED, option.strip("\n")) + "\n")
+                stdscr.addstr(text_zip(" ", option.strip("\n")) + "\n", WHITE)
         
         stdscr.refresh()
         
