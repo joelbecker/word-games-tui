@@ -1,5 +1,18 @@
 import curses
+from dataclasses import dataclass
+
 from utils import Palette
+from typing import Callable
+from placeholder_scene import placeholder_scene
+from connections.scene import connections_scene
+
+
+@dataclass
+class WordGame:
+    name: str
+    func: Callable
+    color: int
+
 
 def main(stdscr):
 
@@ -10,32 +23,37 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.nodelay(1)
     
-    options = {
-        "WORDLE": Palette.green(),
-        "CONNECTIONS": Palette.purple(),
-        "MINI": Palette.blue(),
-        "STRANDS": Palette.red(),
-        "SPELLINGBEE": Palette.yellow()
-    }
+    games = [
+        WordGame("wordle", placeholder_scene, Palette.green()),
+        WordGame("connections", connections_scene, Palette.purple()),
+        WordGame("mini", placeholder_scene, Palette.blue()),
+        WordGame("strands", placeholder_scene, Palette.red()),
+        WordGame("spellingbee", placeholder_scene, Palette.yellow())
+    ]
+    
     current_option = 0
 
     while True:
         stdscr.clear()
-        for idx, option in enumerate(options.keys()):
+        for idx, option in enumerate(games):
             if idx == current_option:
-                stdscr.addstr(f"> {option}\n", options[option] | curses.A_BOLD)
+                stdscr.addstr(f"> {option.name.upper()}\n", option.color | curses.A_BOLD)
             else:
-                stdscr.addstr(f"  {option}\n", Palette.white())
+                stdscr.addstr(f"  {option.name.upper()}\n", Palette.white())
         
         stdscr.refresh()
         
         key = stdscr.getch()
         
         if key == curses.KEY_UP or key == ord('k'):
-            current_option = (current_option - 1) % len(options)
+            current_option = (current_option - 1) % len(games)
         elif key == curses.KEY_DOWN or key == ord('j'):
-            current_option = (current_option + 1) % len(options)
+            current_option = (current_option + 1) % len(games)
         elif key == ord('q'):
             break
+        elif key == ord('\n'):
+            stdscr.clear()
+            stdscr.refresh()
+            games[current_option].func(stdscr)
 
 curses.wrapper(main)

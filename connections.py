@@ -1,5 +1,5 @@
 import curses
-from connections.scene import connections_main
+from connections.scene import connections_scene
 
 if __name__ == "__main__":
-    curses.wrapper(connections_main)
+    curses.wrapper(connections_scene)

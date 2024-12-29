@@ -384,7 +384,7 @@ def puzzle_loading_screen(stdscr):
 
     return puzzle
 
-def connections_main(stdscr):
+def connections_scene(stdscr):
     curses.use_default_colors()
     curses.curs_set(0)
     
