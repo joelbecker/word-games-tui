@@ -1,56 +1,9 @@
 import curses
 
-WORDLE = """
-                 _ _
- _ _ _ ___ ___ _| | |___ 
-| | | | . |  _| . | | -_|
-|_____|___|_| |___|_|___|
-"""
-CONNECTIONS = """
-                         _   _
- ___ ___ ___ ___ ___ ___| |_|_|___ ___ ___ 
-|  _| . |   |   | -_|  _|  _| | . |   |_ -|
-|___|___|_|_|_|_|___|___|_| |_|___|_|_|___|
-"""
-MINI = """
-       _     
- _____|_|___|_|
-|     | |   | |
-|_|_|_|_|_|_|_|
-"""
-STRANDS = """
-     _                 _     
- ___| |_ ___ ___ ___ _| |___ 
-|_ -|  _|  _| .'|   | . |_ -|
-|___|_| |_| |__,|_|_|___|___|
-"""
-SPELLINGBEE = """
-             _ _ _            _           
- ___ ___ ___| | |_|___ ___   | |_ ___ ___ 
-|_ -| . | -_| | | |   | . |  | . | -_| -_|
-|___|  _|___|_|_|_|_|_|_  |  |___|___|___|
-    |_|               |___|               
-"""
-
-SELECTED = "\n".join(["  ", "  ", r"\\", r"//", "  "])
-NOT_SELECTED = "\n".join(["  ", "  ", "  ", "  ", "  "])
-
-def text_zip(s1, s2):
-    return "\n".join([" ".join(t) for t in zip(s1.split("\n"), s2.split("\n"))])
-
-print(text_zip(SELECTED, WORDLE.strip("\n")))
-print(text_zip(NOT_SELECTED, CONNECTIONS.strip("\n")))
-print(text_zip(NOT_SELECTED, MINI.strip("\n")))
-print(text_zip(NOT_SELECTED, STRANDS.strip("\n")))
-print(text_zip(NOT_SELECTED, SPELLINGBEE.strip("\n")))
-
 
 def main(stdscr):
-    curses.start_color()
-    curses.use_default_colors()
-    curses.curs_set(0)
-    curses.noecho()
 
+    curses.use_default_colors()
     for i in range(0, curses.COLORS-1):
             curses.init_pair(i + 1, i, -1)
 
@@ -80,17 +33,17 @@ def main(stdscr):
         stdscr.clear()
         for idx, option in enumerate(options.keys()):
             if idx == current_option:
-                stdscr.addstr(text_zip(">", option.strip("\n")) + "\n", options[option] | curses.A_BOLD)
+                stdscr.addstr(f"> {option}\n", options[option] | curses.A_BOLD)
             else:
-                stdscr.addstr(text_zip(" ", option.strip("\n")) + "\n", WHITE)
+                stdscr.addstr(f"  {option}\n", WHITE)
         
         stdscr.refresh()
         
         key = stdscr.getch()
         
-        if key == curses.KEY_UP:
+        if key == curses.KEY_UP or key == ord('k'):
             current_option = (current_option - 1) % len(options)
-        elif key == curses.KEY_DOWN:
+        elif key == curses.KEY_DOWN or key == ord('j'):
             current_option = (current_option + 1) % len(options)
         elif key == ord('q'):
             break
