@@ -1,5 +1,5 @@
 import curses
-
+from palette import Palette
 
 def main(stdscr):
 
@@ -8,24 +8,17 @@ def main(stdscr):
             curses.init_pair(i + 1, i, -1)
 
     # Define color pairs
-    PURPLE = curses.color_pair(170)
-    YELLOW = curses.color_pair(227)
-    GREEN = curses.color_pair(43)
-    BLUE = curses.color_pair(26)
-    RED = curses.color_pair(203)
-    WHITE = curses.color_pair(253)
-    GRAY = curses.color_pair(240)
     
     curses.curs_set(0)
     stdscr.nodelay(1)
     stdscr.timeout(100)
     
     options = {
-        "WORDLE": GREEN,
-        "CONNECTIONS": PURPLE,
-        "MINI": BLUE,
-        "STRANDS": RED,
-        "SPELLINGBEE": YELLOW
+        "WORDLE": Palette.green(),
+        "CONNECTIONS": Palette.purple(),
+        "MINI": Palette.blue(),
+        "STRANDS": Palette.red(),
+        "SPELLINGBEE": Palette.yellow()
     }
     current_option = 0
 
@@ -35,7 +28,7 @@ def main(stdscr):
             if idx == current_option:
                 stdscr.addstr(f"> {option}\n", options[option] | curses.A_BOLD)
             else:
-                stdscr.addstr(f"  {option}\n", WHITE)
+                stdscr.addstr(f"  {option}\n", Palette.white())
         
         stdscr.refresh()
         
