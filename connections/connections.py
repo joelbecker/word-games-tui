@@ -196,7 +196,7 @@ class ConnectionsApp:
     def __init__(self, words, categories):
         self.words = words
         self.categories = categories
-        self.guesses = 8
+        self.mistakes_remaining = 4
         self.cursor = 0
         self.order_seed = randint(4, 100)
         self.message = "Welcome to Connections!"
@@ -235,11 +235,7 @@ class ConnectionsApp:
     def guess(self):
         if len(self.selected_words()) == 4:
             score = self.score_guess()
-            if score == 4:
-                self.selected_words()[0].category.solved()
-                self.sort()
             self.words = [w.selected(False) for w in self.words]
-            self.guesses -= 1
         else:
             self.message = "Select 4 words to guess."
             return
@@ -247,18 +243,21 @@ class ConnectionsApp:
         if all(w.is_solved for w in words):
             self.message = "You win!"
             self.update_display()
-        elif self.guesses == 0:
+        elif self.mistakes_remaining == 0:
             for c in self.categories:
                 c.solved()
             self.message = "Out of guesses!"
             self.update_display()
-            exit()
         elif score == 4:
-            self.message = "Correct! Guesses left: {}".format(self.guesses)
+            self.message = "Correct! Mistakes remaining: {}".format(self.mistakes_remaining)
+            self.selected_words()[0].category.solved()
+            self.sort()
         elif score == 3:
-            self.message = "One away! Guesses left: {}".format(self.guesses)
+            self.message = "One away! Mistakes remaining: {}".format(self.mistakes_remaining)
+            self.mistakes_remaining -= 1
         else:
-            self.message = "Incorrect. Guesses left: {}".format(self.guesses)
+            self.message = "Incorrect. Mistakes remaining: {}".format(self.mistakes_remaining)
+            self.mistakes_remaining -= 1
 
     def shuffle(self):
         self.order_seed = randint(4, 100)
