@@ -69,6 +69,7 @@ class Word:
         self.word = word
         self.category = category
         self.is_selected = is_selected
+        self.flag: chr = None
 
     @property
     def is_solved(self):
@@ -88,6 +89,8 @@ class Word:
             prefix = "> "
         elif self.is_selected:
             prefix = "* "
+        elif self.flag:
+            prefix = "{} ".format(self.flag)
         else:
             prefix = "  "
         
@@ -105,7 +108,12 @@ class Word:
         return color if self.is_solved else None
 
     def attributes(self):
-        return curses.A_BOLD if self.is_selected else curses.A_NORMAL
+        if self.is_selected:
+            return curses.A_BOLD
+        elif self.flag:
+            return curses.A_DIM
+        else:
+            return curses.A_NORMAL
 
 
 def print_display(words, message="", cursor=0, full_update=True):
@@ -164,6 +172,7 @@ def print_display(words, message="", cursor=0, full_update=True):
 
         controls1 = "[k]up [j]down [s]elect"
         controls2 = "[g]uess [r]eshuffle [q]uit"
+        # controls3 = "[f]lag [c]lear"
         is_control_message_split = len(controls1) + len(controls2) > COLS - 2
         stdscr.addstr(
             len(words) + 3 + vertical_padding,
@@ -311,6 +320,15 @@ def main(words, categories):
             elif key == 'r':
                 state.shuffle()
                 state.update_display(full_update=True)
+            elif key == 'f':
+                state.words[state.cursor].flag = '?'
+                state.sort()
+                state.update_display()
+            elif key == 'c':
+                for w in state.words:
+                    w.flag = None
+                    w.is_selected = False
+                state.update_display()
             elif key == '1':
                 state.message = "Cheat code activated."
                 for w in state.words:
