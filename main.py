@@ -1,5 +1,5 @@
 import curses
-from palette import Palette
+from utils import Palette
 
 def main(stdscr):
 

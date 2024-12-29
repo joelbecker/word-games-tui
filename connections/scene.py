@@ -6,8 +6,8 @@ from datetime import datetime
 from random import randint
 from textwrap import TextWrapper, wrap
 
-from palette import Palette
-from connections.utils import justify
+from utils import Palette
+from utils import justify
 from connections.scrape import PUZZLE_FILE
 
 
