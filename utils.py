@@ -22,6 +22,22 @@ def justify(s, block=15, width=WIDTH, justify='left'):
     return result
 
 
+def display_rows(stdscr):
+    return min(stdscr.getmaxyx()[0], 24)
+    
+
+def display_cols(stdscr):
+    return min(stdscr.getmaxyx()[1], 60)
+
+
+def vertical_buffer(content_rows, display_rows):
+    return (display_rows - content_rows) // 2
+
+
+def horizontal_buffer(content_cols, display_cols):
+    return (display_cols - content_cols) // 2
+
+
 class Palette:
 
     @staticmethod

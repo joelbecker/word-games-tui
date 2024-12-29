@@ -1,15 +1,14 @@
-import json
+import curses.ascii
 import os
-import subprocess
+import json
 import curses
-from datetime import datetime
+import threading
 from random import randint
+from datetime import datetime
 from textwrap import TextWrapper, wrap
 
-from utils import Palette
-from utils import justify
-from connections.scrape import PUZZLE_FILE
-
+from utils import Palette, justify, display_cols, display_rows, vertical_buffer, horizontal_buffer
+from connections.scrape import PUZZLE_FILE, fetch_latest_connections_puzzle
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -191,11 +190,11 @@ class ConnectionsGame:
 
     @property
     def display_rows(self):
-        return min(self.stdscr.getmaxyx()[0], 24)
+        return display_rows(self.stdscr)
     
     @property
     def display_cols(self):
-        return min(self.stdscr.getmaxyx()[1], 60)
+        return display_cols(self.stdscr)
 
     def update_display(self, full_update=True):
 
@@ -288,39 +287,39 @@ def connections_controller(words, categories, stdscr):
     state.sort()
     state.update_display(full_update=True)
     while True:
-        key = chr(stdscr.getch())
+        key = stdscr.getch()
 
-        if key == 'k':
+        if key == ord('k'):
             state.up()
             state.update_display(full_update=False)
-        elif key == 'j':
+        elif key == ord('j'):
             state.down()
             state.update_display(full_update=False)
-        elif key == 's':
+        elif key == ord('s'):
             state.select()
             state.update_display(full_update=False)
-        elif key == 'g':
+        elif key == ord('g'):
             state.guess()
             state.update_display(full_update=True)
-        elif key == 'r':
+        elif key == ord('r'):
             state.shuffle()
             state.update_display(full_update=True)
-        elif key == 'f':
-            state.words[state.cursor].flag = '?'
+        elif key == ord('f'):
+            state.words[state.cursor].flag = curses.ascii.ascii("?")
             state.sort()
             state.update_display()
-        elif key == 'c':
+        elif key == ord('c'):
             for w in state.words:
                 w.flag = None
                 w.is_selected = False
             state.update_display()
-        elif key == '1':
+        elif key == ord('1'):
             state.message = "Cheat code activated."
             for w in state.words:
                 w.category.solved()
             state.sort()
             state.update_display(full_update=True)
-        elif key == 'q':
+        elif key == ord('q'):
             break
         else:
             continue
@@ -335,6 +334,56 @@ def load_puzzle():
         exit()
     return puzzle
 
+def fetch_puzzle():
+    if not os.path.exists(PUZZLE_FILE):
+        fetch_latest_connections_puzzle()
+        puzzle = load_puzzle()
+    else:
+        puzzle = load_puzzle()
+    
+    if puzzle['date'] != datetime.now().strftime('%Y-%m-%d'):
+        fetch_latest_connections_puzzle()
+        puzzle = load_puzzle()
+
+    return puzzle
+
+def loading_animation(stdscr, fetch_puzzle_event):
+        stdscr.nodelay(True)
+        animation = ["|", "/", "-", "\\"]
+        content = "Fetching puzzle... "
+        idx = 0
+        start_time = datetime.now()
+        while True:
+            vbuffer = vertical_buffer(1, display_rows(stdscr))
+            hbuffer = horizontal_buffer(len(content) + 1, display_cols(stdscr))
+            is_time_buffer_elapsed = (datetime.now() - start_time).total_seconds() >= 0.5
+            stdscr.clear()
+            stdscr.addstr(vbuffer, hbuffer, content + animation[idx % len(animation)])
+            stdscr.refresh()
+            idx += 1
+            if not fetch_puzzle_event.is_set() and is_time_buffer_elapsed:
+                break
+            curses.napms(100)
+
+def puzzle_loading_screen(stdscr):
+
+    fetch_puzzle_event = threading.Event()
+    puzzle = None
+
+    def fetch_puzzle_in_background():
+        nonlocal puzzle
+        puzzle = fetch_puzzle()
+        fetch_puzzle_event.clear()
+
+    fetch_puzzle_event.set()
+    fetch_thread = threading.Thread(target=fetch_puzzle_in_background)
+    fetch_thread.start()
+
+    loading_animation(stdscr, fetch_puzzle_event)
+    fetch_thread.join()
+
+    return puzzle
+
 def connections_main(stdscr):
     curses.use_default_colors()
     curses.curs_set(0)
@@ -342,16 +391,8 @@ def connections_main(stdscr):
     for i in range(0, curses.COLORS-1):
         curses.init_pair(i + 1, i, -1)
 
-    if not os.path.exists(PUZZLE_FILE):
-        subprocess.run(['python', 'scrape.py'])
-        puzzle = load_puzzle()
-    else:
-        puzzle = load_puzzle()
-    
-    if puzzle['date'] != datetime.now().strftime('%Y-%m-%d'):
-        subprocess.run(['python', 'scrape.py'])
-        puzzle = load_puzzle()
-        
+    puzzle = puzzle_loading_screen(stdscr)
+
     categories, category_words = puzzle["categories"], puzzle["words"]
     categories = {
         "yellow": Category(CategoryColor.YELLOW, categories["yellow"]),

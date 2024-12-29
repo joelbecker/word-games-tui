@@ -79,20 +79,13 @@ def get_connections_puzzle(month: int, day: int):
 
     return categories, words
 
-if __name__ == "__main__":
-    if len(sys.argv) != 4 and len(sys.argv) != 1:
-        print("Usage: python scrape.py [<year> <month> <day>]")
-        sys.exit(1)
+def fetch_latest_connections_puzzle():
 
-    if len(sys.argv) == 4:
-        year = int(sys.argv[1])
-        month = int(sys.argv[2])
-        day = int(sys.argv[3])
-    else:
-        now = datetime.now()
-        year = now.year
-        month = now.month
-        day = now.day
+    now = datetime.now()
+    year = now.year
+    month = now.month
+    day = now.day
+
     scraped_categories, scraped_words = get_connections_puzzle(month, day)
 
     puzzle_data = {
