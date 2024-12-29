@@ -7,11 +7,8 @@ def main(stdscr):
     for i in range(0, curses.COLORS-1):
             curses.init_pair(i + 1, i, -1)
 
-    # Define color pairs
-    
     curses.curs_set(0)
     stdscr.nodelay(1)
-    stdscr.timeout(100)
     
     options = {
         "WORDLE": Palette.green(),
