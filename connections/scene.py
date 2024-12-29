@@ -6,29 +6,10 @@ from datetime import datetime
 from random import randint
 from textwrap import TextWrapper, wrap
 
-from utils import justify
-from scrape import PUZZLE_FILE
+from palette import Palette
+from connections.utils import justify
+from connections.scrape import PUZZLE_FILE
 
-stdscr = curses.initscr()
-curses.start_color()
-curses.use_default_colors()
-curses.curs_set(0)
-curses.noecho()
-
-for i in range(0, curses.COLORS-1):
-        curses.init_pair(i + 1, i, -1)
-
-ROWS, COLS = stdscr.getmaxyx()
-ROWS = min(ROWS, 24)
-COLS = min(COLS, 60)
-
-# Define color pairs
-PURPLE = curses.color_pair(170)
-YELLOW = curses.color_pair(227)
-GREEN = curses.color_pair(43)
-BLUE = curses.color_pair(26)
-WHITE = curses.color_pair(253)
-GRAY = curses.color_pair(240)
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -100,10 +81,10 @@ class Word:
 
     def solved_color(self):
         color = {
-            "yellow": YELLOW,
-            "green": GREEN,
-            "blue": BLUE,
-            "purple": PURPLE
+            "yellow": Palette.yellow(),
+            "green": Palette.green(),
+            "blue": Palette.blue(),
+            "purple": Palette.purple()
         }.get(self.category.color.name.lower(), None)
         return color if self.is_solved else None
 
@@ -116,93 +97,8 @@ class Word:
             return curses.A_NORMAL
 
 
-def print_display(words, message="", cursor=0, full_update=True):
-    column_width = COLS // 2
-    vertical_padding = (ROWS - (len(words) + 5)) // 2
-    description_column = [""] * len(words)
-    if full_update:
-        for i in range(4):
-            index = i * 4
-            category = words[index].category
-            if category.is_solved:
-                wrapped = wrap(text=category.description, width=column_width)
-                for j in range(min(len(wrapped), 4)):
-                    description_column[i*4+j] = wrapped[j]
-    if full_update:
-        stdscr.clear()
-
-    start_index = 0 if full_update else max(0, cursor - 1)
-    end_index = len(words) if full_update else min(len(words), cursor + 2)
-
-    for i in range(start_index, end_index):  # Adjust to fit within the terminal window
-        word = words[i]
-        is_cursor = (i == cursor)
-        solved_color_pair = word.solved_color()
-        unsolved_color_pair = (WHITE | curses.A_REVERSE) if is_cursor else WHITE
-        formatted_desc = justify(
-            description_column[i],
-            block=column_width,
-            width=column_width,
-            justify="right"
-        ) + " "
-        formatted_word = word.format(
-            is_cursor=is_cursor,
-            max_width=column_width
-        ).upper()
-        stdscr.addstr(
-            i + 1 + vertical_padding,
-            0,
-            formatted_desc,
-            (solved_color_pair or WHITE)
-        )
-        stdscr.addstr(
-            i + 1 + vertical_padding,
-            len(formatted_desc),
-            formatted_word,
-            (solved_color_pair or unsolved_color_pair) | word.attributes()
-        )
-    
-    if full_update:
-        stdscr.addstr(
-            len(words) + 2 + vertical_padding,
-            0,
-            justify(message, block=column_width*2, width=column_width*2, justify="center"),
-            WHITE
-        )
-
-        controls1 = "[k]up [j]down [s]elect"
-        controls2 = "[g]uess [r]eshuffle [q]uit"
-        # controls3 = "[f]lag [c]lear"
-        is_control_message_split = len(controls1) + len(controls2) > COLS - 2
-        stdscr.addstr(
-            len(words) + 3 + vertical_padding,
-            0,
-            justify(
-                controls1 if is_control_message_split else "{} {}".format(controls1, controls2),
-                block=column_width*2,
-                width=column_width*2,
-                justify="center"
-            ),
-            GRAY
-        )
-        if is_control_message_split:
-            stdscr.addstr(
-                len(words) + 4 + vertical_padding,
-                0,
-                justify(
-                    controls2,
-                    block=column_width*2,
-                    width=column_width*2,
-                    justify="center"
-                ),
-                GRAY
-            )
-    
-    stdscr.refresh()
-
-
-class ConnectionsApp:
-    def __init__(self, words, categories):
+class ConnectionsGame:
+    def __init__(self, words, categories, stdscr):
         self.words: list[Word] = words
         self.categories: list[Category] = categories
         self.guesses: list[set[str]] = []
@@ -210,6 +106,7 @@ class ConnectionsApp:
         self.cursor = 0
         self.order_seed = randint(4, 100)
         self.message = "Welcome to Connections!"
+        self.stdscr = stdscr
     
     def selected_words(self):
         return [word for word in self.words if word.is_selected]
@@ -258,7 +155,7 @@ class ConnectionsApp:
             self.message = "Select 4 words to guess."
             return
         
-        if all(w.is_solved for w in words):
+        if all(w.is_solved for w in self.words):
             self.message = "You win!"
             self.update_display()
         elif self.mistakes_remaining == 0:
@@ -292,55 +189,141 @@ class ConnectionsApp:
             next((i for i, word in enumerate(self.words) if not word.is_solved), 0)
         )
 
+    @property
+    def display_rows(self):
+        return min(self.stdscr.getmaxyx()[0], 24)
+    
+    @property
+    def display_cols(self):
+        return min(self.stdscr.getmaxyx()[1], 60)
+
     def update_display(self, full_update=True):
-        print_display(self.words, self.message, self.cursor, full_update=full_update)
+
+        column_width = self.display_cols // 2
+        vertical_padding = (self.display_rows - (len(self.words) + 5)) // 2
+        description_column = [""] * len(self.words)
+        if full_update:
+            for i in range(4):
+                index = i * 4
+                category = self.words[index].category
+                if category.is_solved:
+                    wrapped = wrap(text=category.description, width=column_width)
+                    for j in range(min(len(wrapped), 4)):
+                        description_column[i*4+j] = wrapped[j]
+        if full_update:
+            self.stdscr.clear()
+
+        start_index = 0 if full_update else max(0, self.cursor - 1)
+        end_index = len(self.words) if full_update else min(len(self.words), self.cursor + 2)
+
+        for i in range(start_index, end_index):  # Adjust to fit within the terminal window
+            word = self.words[i]
+            is_cursor = (i == self.cursor)
+            solved_color_pair = word.solved_color()
+            unsolved_color_pair = (Palette.white() | curses.A_REVERSE) if is_cursor else Palette.white()
+            formatted_desc = justify(
+                description_column[i],
+                block=column_width,
+                width=column_width,
+                justify="right"
+            ) + " "
+            formatted_word = word.format(
+                is_cursor=is_cursor,
+                max_width=column_width
+            ).upper()
+            self.stdscr.addstr(
+                i + 1 + vertical_padding,
+                0,
+                formatted_desc,
+                (solved_color_pair or Palette.white())
+            )
+            self.stdscr.addstr(
+                i + 1 + vertical_padding,
+                len(formatted_desc),
+                formatted_word,
+                (solved_color_pair or unsolved_color_pair) | word.attributes()
+            )
+        
+        if full_update:
+            self.stdscr.addstr(
+                len(self.words) + 2 + vertical_padding,
+                0,
+                justify(self.message, block=column_width*2, width=column_width*2, justify="center"),
+                Palette.white()
+            )
+
+            controls1 = "[k]up [j]down [s]elect"
+            controls2 = "[g]uess [r]eshuffle [q]uit"
+            # controls3 = "[f]lag [c]lear"
+            is_control_message_split = len(controls1) + len(controls2) > self.display_cols - 2
+            self.stdscr.addstr(
+                len(self.words) + 3 + vertical_padding,
+                0,
+                justify(
+                    controls1 if is_control_message_split else "{} {}".format(controls1, controls2),
+                    block=column_width*2,
+                    width=column_width*2,
+                    justify="center"
+                ),
+                Palette.gray()
+            )
+            if is_control_message_split:
+                self.stdscr.addstr(
+                    len(self.words) + 4 + vertical_padding,
+                    0,
+                    justify(
+                        controls2,
+                        block=column_width*2,
+                        width=column_width*2,
+                        justify="center"
+                    ),
+                    Palette.gray()
+                )
+        
+        self.stdscr.refresh()
 
 
-def main(words, categories):
-    state = ConnectionsApp(words, categories)
+def connections_controller(words, categories, stdscr):
+    state = ConnectionsGame(words, categories, stdscr)
     state.sort()
     state.update_display(full_update=True)
+    while True:
+        key = chr(stdscr.getch())
 
-    try:
-        while True:
-            key = chr(stdscr.getch())
-
-            if key == 'k':
-                state.up()
-                state.update_display(full_update=False)
-            elif key == 'j':
-                state.down()
-                state.update_display(full_update=False)
-            elif key == 's':
-                state.select()
-                state.update_display(full_update=False)
-            elif key == 'g':
-                state.guess()
-                state.update_display(full_update=True)
-            elif key == 'r':
-                state.shuffle()
-                state.update_display(full_update=True)
-            elif key == 'f':
-                state.words[state.cursor].flag = '?'
-                state.sort()
-                state.update_display()
-            elif key == 'c':
-                for w in state.words:
-                    w.flag = None
-                    w.is_selected = False
-                state.update_display()
-            elif key == '1':
-                state.message = "Cheat code activated."
-                for w in state.words:
-                    w.category.solved()
-                state.sort()
-                state.update_display(full_update=True)
-            elif key == 'q':
-                break
-            else:
-                continue
-    finally:
-        curses.endwin()
+        if key == 'k':
+            state.up()
+            state.update_display(full_update=False)
+        elif key == 'j':
+            state.down()
+            state.update_display(full_update=False)
+        elif key == 's':
+            state.select()
+            state.update_display(full_update=False)
+        elif key == 'g':
+            state.guess()
+            state.update_display(full_update=True)
+        elif key == 'r':
+            state.shuffle()
+            state.update_display(full_update=True)
+        elif key == 'f':
+            state.words[state.cursor].flag = '?'
+            state.sort()
+            state.update_display()
+        elif key == 'c':
+            for w in state.words:
+                w.flag = None
+                w.is_selected = False
+            state.update_display()
+        elif key == '1':
+            state.message = "Cheat code activated."
+            for w in state.words:
+                w.category.solved()
+            state.sort()
+            state.update_display(full_update=True)
+        elif key == 'q':
+            break
+        else:
+            continue
 
 
 def load_puzzle():
@@ -352,7 +335,13 @@ def load_puzzle():
         exit()
     return puzzle
 
-if __name__ == "__main__":
+def connections_main(stdscr):
+    curses.use_default_colors()
+    curses.curs_set(0)
+    
+    for i in range(0, curses.COLORS-1):
+        curses.init_pair(i + 1, i, -1)
+
     if not os.path.exists(PUZZLE_FILE):
         subprocess.run(['python', 'scrape.py'])
         puzzle = load_puzzle()
@@ -376,7 +365,4 @@ if __name__ == "__main__":
         for word in word_list:
             words.append(Word(word, categories[color]))
 
-    try:
-        main(words, categories.values())
-    finally:
-        curses.endwin()
+    connections_controller(words, categories.values(), stdscr)

@@ -16,7 +16,7 @@ def print_banner(s):
 
 def strip_ansi(s):
     return re.sub(r'\x1b[^m]*m', '', s)
-    
+     
 
 def justify(s, block=15, width=WIDTH, justify='left'):
     _justify = {
