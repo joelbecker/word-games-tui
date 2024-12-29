@@ -1,5 +1,8 @@
 import json
+import os
+import subprocess
 import curses
+from datetime import datetime
 from random import randint
 from textwrap import TextWrapper, wrap
 
@@ -315,15 +318,27 @@ def main(words, categories):
     finally:
         curses.endwin()
 
-if __name__ == "__main__":
+
+def load_puzzle():
     try:
         with open(PUZZLE_FILE, 'r') as f:
-            puzzles = json.load(f)
+            puzzle = json.load(f)
     except:
         print("Failed to load puzzle file.")
         exit()
+    return puzzle
+
+if __name__ == "__main__":
+    if not os.path.exists(PUZZLE_FILE):
+        subprocess.run(['python', 'scrape.py'])
+        puzzle = load_puzzle()
+    else:
+        puzzle = load_puzzle()
     
-    puzzle = puzzles[max(puzzles.keys())]
+    if puzzle['date'] != datetime.now().strftime('%Y-%m-%d'):
+        subprocess.run(['python', 'scrape.py'])
+        puzzle = load_puzzle()
+        
     categories, category_words = puzzle["categories"], puzzle["words"]
     categories = {
         "yellow": Category(CategoryColor.YELLOW, categories["yellow"]),

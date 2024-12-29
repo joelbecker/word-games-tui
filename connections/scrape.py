@@ -1,13 +1,16 @@
 import re
+import os
 import sys
 import json
 import html
 import html.parser
+import calendar
 import subprocess
 from datetime import datetime
-import calendar
 
-PUZZLE_FILE = 'connections/puzzles.json'
+
+PUZZLE_FILE = os.path.expanduser('~/.wordgames/connections.json')
+
 
 def is_word_list(s):
     return re.match(r': ([A-Z ]+(,)*){4}', s)
@@ -93,21 +96,17 @@ if __name__ == "__main__":
     scraped_categories, scraped_words = get_connections_puzzle(month, day)
 
     puzzle_data = {
-        '{}-{}-{}'.format(year, month, day): {
-            'categories': scraped_categories,
-            'words': scraped_words
-        }
+        'date': '{}-{}-{}'.format(year, month, day),
+        'categories': scraped_categories,
+        'words': scraped_words,
+        'guesses': [],
+        'is_finished': False,
     }
 
-    try:
-        with open(PUZZLE_FILE, 'r') as f:
-            existing_data = json.load(f)
-    except:
-        existing_data = {}
-
-    existing_data.update(puzzle_data)
+    if not os.path.exists(os.path.dirname(PUZZLE_FILE)):
+        os.makedirs(os.path.dirname(PUZZLE_FILE))
 
     with open(PUZZLE_FILE, 'w') as f:
-        json.dump(existing_data, f, indent=4)
-    
+        json.dump(puzzle_data, f, indent=4)
     print("Puzzle data saved to {}".format(PUZZLE_FILE))
+    
