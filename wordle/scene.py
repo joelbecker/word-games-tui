@@ -132,7 +132,7 @@ def wordle_scene(stdscr):
                         game.message = "Out of guesses! Answer was: " + game.secret.upper()
                         game.update_display(stdscr, "", full_update=True)
                     else:
-                        game.message = "Incorrect. "
+                        game.message = f"Incorrect. {6 - game.count} guesses remaining."
                         game.update_display(stdscr, "", full_update=True)
             elif curses.ascii.isalpha(key) and len(input_buffer) < 5:
                 input_buffer += chr(key).lower()
