@@ -11,7 +11,6 @@ from wordle.scrape import WORDLE_FILENAME, load_wordle_data
 with open(os.path.expanduser("wordle/words.txt"), "r") as f:
     WORD_LIST = [s.strip() for s in f.readlines()]
     
-# initialize game state 
 KEYBOARD = "q w e r t y u i o p\na s d f g h j k l  \n  z x c v b n m      ".split("\n")
 
 
