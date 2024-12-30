@@ -61,7 +61,7 @@ class WordleGame:
     
     def update_display(self, stdscr, buffer, full_update=False):
         hbuffer = utils.horizontal_buffer(5, utils.display_cols(stdscr))
-        vbuffer = utils.vertical_buffer(20, utils.display_rows(stdscr))
+        vbuffer = utils.vertical_buffer(17, utils.display_rows(stdscr))
         hbuffer_keyboard = utils.horizontal_buffer(len(KEYBOARD[0]), utils.display_cols(stdscr))
         
         if full_update:
@@ -90,10 +90,10 @@ class WordleGame:
                     color = utils.Palette.gray()
                 else:
                     color = utils.Palette.white()
-                stdscr.addstr(vbuffer+13+i, hbuffer_keyboard+j, KEYBOARD[i][j].upper(), color)
+                stdscr.addstr(vbuffer+12+i, hbuffer_keyboard+j, KEYBOARD[i][j].upper(), color)
 
         if full_update:
-            stdscr.addstr(vbuffer+18, 0, utils.justify(self.message, len(self.message), utils.display_cols(stdscr)), utils.Palette.white())
+            stdscr.addstr(vbuffer+16, 0, utils.justify(self.message, len(self.message), utils.display_cols(stdscr)), utils.Palette.white())
         
         stdscr.refresh()
 
