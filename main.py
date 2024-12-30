@@ -33,9 +33,10 @@ def main(stdscr):
     ]
     
     current_option = 0
+    
+    stdscr.clear()
 
     while True:
-        stdscr.clear()
         for idx, option in enumerate(games):
             if idx == current_option:
                 stdscr.addstr(f"> {option.name.upper()}\n", option.color | curses.A_BOLD)
