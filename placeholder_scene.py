@@ -12,4 +12,5 @@ def placeholder_scene(stdscr):
         stdscr.refresh()
         key = stdscr.getch()
         if key == ord('q'):
+            stdscr.clear()
             break
