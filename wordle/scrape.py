@@ -40,10 +40,11 @@ def update_wordle_data(wordle_answer):
         with open(WORDLE_FILENAME, "w") as f:
             json.dump(wordle_data, f)
     else:
-        with open(WORDLE_FILENAME, "r+") as f:
+        with open(WORDLE_FILENAME, "r") as f:
             data = json.load(f)
             if data["date"] != wordle_data["date"]:
-                json.dump(wordle_data, f)
+                with open(WORDLE_FILENAME, "w") as f:
+                    json.dump(wordle_data, f)
 
 def load_wordle_data(stdscr):
     stdscr.clear()
