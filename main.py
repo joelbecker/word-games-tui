@@ -5,6 +5,7 @@ from utils import Palette
 from typing import Callable
 from placeholder_scene import placeholder_scene
 from connections.scene import connections_scene
+from wordle.scene import wordle_scene
 
 
 @dataclass
@@ -24,7 +25,7 @@ def main(stdscr):
     stdscr.nodelay(1)
     
     games = [
-        WordGame("wordle", placeholder_scene, Palette.green()),
+        WordGame("wordle", wordle_scene, Palette.green()),
         WordGame("connections", connections_scene, Palette.purple()),
         WordGame("mini", placeholder_scene, Palette.blue()),
         WordGame("strands", placeholder_scene, Palette.red()),
