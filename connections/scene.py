@@ -320,6 +320,7 @@ def connections_controller(words, categories, stdscr):
             state.sort()
             state.update_display(full_update=True)
         elif key == ord('q'):
+            stdscr.clear()
             break
         else:
             continue
