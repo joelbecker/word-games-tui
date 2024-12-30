@@ -1,6 +1,7 @@
 import curses
 from dataclasses import dataclass
 
+import utils
 from utils import Palette
 from typing import Callable
 from placeholder_scene import placeholder_scene
@@ -33,15 +34,16 @@ def main(stdscr):
     ]
     
     current_option = 0
-    
+    vbuffer = utils.vertical_buffer(len(games), utils.display_rows(stdscr))
+    hbuffer = utils.horizontal_buffer(max(len(game.name) for game in games), utils.display_cols(stdscr))
     stdscr.clear()
 
     while True:
         for idx, option in enumerate(games):
             if idx == current_option:
-                stdscr.addstr(idx, 0, f"> {option.name.upper()}\n", option.color | curses.A_BOLD)
+                stdscr.addstr(vbuffer+idx, hbuffer, f"> {option.name.upper()}\n", option.color | curses.A_BOLD)
             else:
-                stdscr.addstr(idx, 0, f"  {option.name.upper()}\n", Palette.white())
+                stdscr.addstr(vbuffer+idx, hbuffer, f"  {option.name.upper()}\n", Palette.white())
         
         stdscr.refresh()
         
