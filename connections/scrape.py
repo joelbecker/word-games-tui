@@ -43,12 +43,17 @@ class ConnectionsParser(html.parser.HTMLParser):
                 self.ul_contents[-1].append(data)
 
 
-def get_connections_puzzle(month: int, day: int):
-    month_name = calendar.month_name[month].lower()
+def get_connections_puzzle():
+    month = datetime.now().strftime("%B").lower()
+    day = int(datetime.now().strftime("%d"))
+    year = int(datetime.now().strftime("%Y"))
     connections_url = 'https://mashable.com/article/nyt-connections-hint-answer-today-{}-{}'.format(
-        month_name,
+        month,
         day
     )
+    if year >= 2025:
+        connections_url += f'-{year}'
+        
     connections_html = subprocess.run(['curl', connections_url, '>', 'connections.html'], capture_output=True)
     
     parser = ConnectionsParser()
@@ -81,15 +86,10 @@ def get_connections_puzzle(month: int, day: int):
 
 def fetch_latest_connections_puzzle():
 
-    now = datetime.now()
-    year = now.year
-    month = now.month
-    day = now.day
-
-    scraped_categories, scraped_words = get_connections_puzzle(month, day)
+    scraped_categories, scraped_words = get_connections_puzzle()
 
     puzzle_data = {
-        'date': '{}-{}-{}'.format(year, month, day),
+        'date': datetime.now().strftime('%Y-%m-%d'),
         'categories': scraped_categories,
         'words': scraped_words,
         'guesses': [],
@@ -103,3 +103,4 @@ def fetch_latest_connections_puzzle():
         json.dump(puzzle_data, f, indent=4)
     print("Puzzle data saved to {}".format(PUZZLE_FILE))
     
+    return puzzle_data
