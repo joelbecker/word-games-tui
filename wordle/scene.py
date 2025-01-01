@@ -110,41 +110,34 @@ def wordle_scene(stdscr):
     game.update_display(stdscr, "", full_update=True)
 
     input_buffer = ""
-
-    while True:
-        key = stdscr.getch()
-        if not game.is_win() and not game.is_lose():
-            if key == curses.KEY_BACKSPACE or key == 127:
-                input_buffer = input_buffer[:-1]
-                game.update_display(stdscr, input_buffer, full_update=True)
-            elif key == curses.KEY_ENTER or key in [10, 13]:
-                if game.check_invalid_guess(input_buffer):
-                    game.message = game.check_invalid_guess(input_buffer)
+    try:
+        while True:
+            key = stdscr.getch()
+            if not game.is_win() and not game.is_lose():
+                if key == curses.KEY_BACKSPACE or key == 127:
+                    input_buffer = input_buffer[:-1]
                     game.update_display(stdscr, input_buffer, full_update=True)
-                else:
-                    game.guesses.append(input_buffer)
-                    game.count += 1
-                    input_buffer = ""
-                    if game.is_win():
-                        game.message = "You win!"
-                        game.update_display(stdscr, "", full_update=True)
-                    elif game.is_lose():
-                        game.message = "Out of guesses! Answer was: " + game.secret.upper()
-                        game.update_display(stdscr, "", full_update=True)
+                elif key == curses.KEY_ENTER or key in [10, 13]:
+                    if game.check_invalid_guess(input_buffer):
+                        game.message = game.check_invalid_guess(input_buffer)
+                        game.update_display(stdscr, input_buffer, full_update=True)
                     else:
-                        game.message = f"Incorrect. {6 - game.count} guesses remaining."
-                        game.update_display(stdscr, "", full_update=True)
-            elif curses.ascii.isalpha(key) and len(input_buffer) < 5:
-                input_buffer += chr(key).lower()
-                game.update_display(stdscr, input_buffer, full_update=False)
-            elif key == ord('1'):
-                import pdb; pdb.set_trace()
-        
-        # Exit on Esc
-        if key == 27:
-            stdscr.nodelay(True)
-            n = stdscr.getch()
-            go = n == -1
-            stdscr.nodelay(False)
-            if go:
-                exit()
+                        game.guesses.append(input_buffer)
+                        game.count += 1
+                        input_buffer = ""
+                        if game.is_win():
+                            game.message = "You win!"
+                            game.update_display(stdscr, "", full_update=True)
+                        elif game.is_lose():
+                            game.message = "Out of guesses! Answer was: " + game.secret.upper()
+                            game.update_display(stdscr, "", full_update=True)
+                        else:
+                            game.message = f"Incorrect. {6 - game.count} guesses remaining."
+                            game.update_display(stdscr, "", full_update=True)
+                elif curses.ascii.isalpha(key) and len(input_buffer) < 5:
+                    input_buffer += chr(key).lower()
+                    game.update_display(stdscr, input_buffer, full_update=False)
+    except KeyboardInterrupt:
+        stdscr.clear()
+        stdscr.refresh()
+        return
