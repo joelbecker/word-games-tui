@@ -7,7 +7,7 @@ from typing import Callable
 from placeholder_scene import placeholder_scene
 from connections.scene import connections_scene
 from wordle.scene import wordle_scene
-
+from mini.scene import mini_demo_scene
 
 @dataclass
 class WordGame:
@@ -28,7 +28,7 @@ def main(stdscr):
     games = [
         WordGame("wordle", wordle_scene, Palette.green()),
         WordGame("connections", connections_scene, Palette.purple()),
-        WordGame("mini", placeholder_scene, Palette.blue()),
+        WordGame("mini", mini_demo_scene, Palette.blue()),
         WordGame("strands", placeholder_scene, Palette.red()),
         WordGame("spellingbee", placeholder_scene, Palette.yellow())
     ]

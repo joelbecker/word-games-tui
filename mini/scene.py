@@ -1,12 +1,8 @@
+import random
 from time import sleep
-import termcolor
 from typing import Iterable, Callable
-from cycle import Cycle
-
-WHITE = "white"
-GREY = "dark_grey"
-BLUE = "blue"
-YELLOW = "yellow"
+from mini.cycle import Cycle
+import utils
 
 # TODO: Add cell->word mappings
 
@@ -67,7 +63,7 @@ class CrosswordGrid:
     def check_out_of_bounds(self, coords: list[tuple[int, int]], b: Callable[[Iterable[bool]], bool] = any) -> bool:
         return self._check_coordinates(coords, self.is_out_of_bounds, b)
 
-    def _color_character(self, i: int, j: int, c: str, rel_coords: list[tuple[int, int]]) -> str:
+    def _color_character(self, i: int, j: int, c: str, rel_coords: list[tuple[int, int]]) -> tuple[chr, int]:
         coords = [(i + di, j + dj) for di, dj in rel_coords]
         is_white = c.isalpha() or self.check_out_of_bounds(coords)
         is_yellow = self.check_cursor_cells(coords)
@@ -78,17 +74,17 @@ class CrosswordGrid:
             return self.null_charcter_fn(c)
         
         if is_yellow:
-            color = YELLOW
+            color = utils.Palette.yellow()
         elif is_blue:
-            color = BLUE
+            color = utils.Palette.blue()
         elif is_white:
-            color = WHITE
+            color = utils.Palette.white()
         else:
-            color = GREY
+            color = utils.Palette.gray()
 
-        return termcolor.colored(c, color)
+        return c, color
 
-    def _character(self, i: int, j: int, is_hline: bool, is_vline: bool, is_center: bool) -> str:
+    def _character(self, i: int, j: int, is_hline: bool, is_vline: bool, is_center: bool) -> tuple[chr, int]:
         if is_center:
             value = self.cells[i][j] or " "
             return self._color_character(i, j, value, [(0, 0)])
@@ -105,24 +101,35 @@ class CrosswordGrid:
             rel_coords = [(0, 0)]
             return self._color_character(i, j, " ", rel_coords)
 
-    def __str__(self):
+    def update_display(self, stdscr, full_update: bool = False):
         width = self.cols * 4 + 1
         height = self.rows * 2 + 1
-        result = ""
-        for y in range(height):
+        hbuffer = utils.horizontal_buffer(width, utils.display_cols(stdscr))
+        vbuffer = utils.vertical_buffer(height, utils.display_rows(stdscr))
+
+        if full_update:
+            stdscr.clear()
+        
+        # TODO: These partial updates are very broken. TBD whether it's needed for performance.
+        y_start = 0 if full_update else self.cursor_row * 2 - 2
+        x_start = 0 if full_update else self.cursor_col * 4 - 4
+        y_end = height if full_update else y_start + 4
+        x_end = width if full_update else x_start + 8
+
+        for y in range(y_start, y_end):
             i = y // 2
             is_hline = y % 2 == 0
-            for x in range(width):
+            for x in range(x_start, x_end):
                 j = x // 4
                 is_vline = x % 4 == 0
                 is_center = x % 4 == 2 and y % 2 == 1
                 try:
-                    result += self._character(i, j, is_hline, is_vline, is_center)
+                    c, color = self._character(i, j, is_hline, is_vline, is_center)
+                    stdscr.addstr(y + vbuffer, x + hbuffer, c, color)
                 except Exception as e:
-                    result += "#"
+                    stdscr.addstr(y + vbuffer, x + hbuffer, "#")
                     raise e
-            result += "\n"
-        return result
+        stdscr.refresh()
     
 
 class IndexController:
@@ -179,18 +186,6 @@ class IndexController:
 def parse_puzzle(s: str) -> list[list[str]]:
     return [[c if c.isalpha() else None for c in list(row)] for row in s.strip().split("\n")]
 
-def compare_options(puzzle):
-    puzzles = [
-        str(CrosswordGrid(puzzle)).split("\n"),
-        str(CrosswordGrid(puzzle, null_charcter_fn=lambda c: termcolor.colored(c, GREY))).split("\n"),
-        str(CrosswordGrid(puzzle, null_charcter_fn=lambda c: termcolor.colored(c, "red"))).split("\n"),
-        str(CrosswordGrid(puzzle, null_charcter_fn=lambda c: termcolor.colored(c if c == "+" else " "))).split("\n"),
-    ]
-
-    return "\n".join(["   ".join(t) for t in zip(*puzzles)])
-
-def clear_display():
-    print("\033c")
 
 puzzle_1 = """
 .ROSE
@@ -237,36 +232,41 @@ REDWINE
 """
 
 examples = [
-    # puzzle_1,
-    # puzzle_2,
-    # puzzle_3,
-    # puzzle_4,
+    puzzle_1,
+    puzzle_2,
+    puzzle_3,
+    puzzle_4,
     puzzle_5
 ]
+random.shuffle(examples)
 
-for i in range(len(examples)):
-    crossword = CrosswordGrid(
-        parse_puzzle(examples[i]),
-        null_charcter_fn=lambda c: termcolor.colored(c, GREY)
-    )
-    controller = IndexController(crossword)
-    demo_steps = crossword.rows * crossword.cols * 2
-    for j in range(demo_steps):
-        clear_display()
-        print(f"Example {i + 1}/{len(examples)}")
-        print(f"Cell Cycle {j + 1}/{demo_steps}")
-        print(crossword)
-        print('min cell', min(crossword.valid_cells))
-        print(list(crossword.valid_cells))
-        controller.cycle_cell(auto_skip=False)
-        sleep(0.5)
-    demo_steps = (crossword.rows + crossword.cols) * 2
-    for j in range(demo_steps):
-        clear_display()
-        print(f"Example {i + 1}/{len(examples)}")
-        print(f"Lane Cycle {j + 1}/{demo_steps}")
-        print(crossword)
-        print('min cell', min(crossword.valid_cells))
-        print(list(crossword.valid_cells))
-        controller.cycle_lane(auto_skip=False)
-        sleep(0.5)
+def mini_demo_scene(stdscr):
+    try:
+        while True:
+            for i in range(len(examples)):
+                crossword = CrosswordGrid(
+                    parse_puzzle(examples[i]),
+                    null_charcter_fn=lambda c: (c, utils.Palette.gray())
+                )
+                controller = IndexController(crossword)
+                demo_steps = crossword.rows * crossword.cols * 2
+                crossword.update_display(stdscr, full_update=True)
+                for j in range(demo_steps):
+                    crossword.update_display(stdscr, full_update=True)
+                    stdscr.addstr(0, 0, f"Demo {i + 1}/{len(examples)}")
+                    stdscr.addstr(1, 0, f"Cell Cycle {j + 1}/{demo_steps}")
+                    stdscr.refresh()
+                    controller.cycle_cell(auto_skip=False)
+                    sleep(0.3)
+                demo_steps = (crossword.rows + crossword.cols) * 2
+                for j in range(demo_steps):
+                    crossword.update_display(stdscr, full_update=True)
+                    stdscr.addstr(0, 0, f"Example {i + 1}/{len(examples)}")
+                    stdscr.addstr(1, 0, f"Lane Cycle {j + 1}/{demo_steps}")
+                    stdscr.refresh()
+                    controller.cycle_lane(auto_skip=False)
+                    sleep(0.3)
+    except KeyboardInterrupt:
+        stdscr.clear()
+        stdscr.refresh()
+        return
