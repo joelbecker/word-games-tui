@@ -22,7 +22,7 @@ def get_spellingbee_words():
 
     return center_letter, spellingbee_words, date
 
-def update_spellingbee_data(spellingbee_words, center_letter):
+def update_spellingbee_data(spellingbee_words, center_letter, date):
     letters = set(center_letter)
     for word in spellingbee_words:
         letters.update(word)
@@ -30,7 +30,7 @@ def update_spellingbee_data(spellingbee_words, center_letter):
         "spellingbee_words": spellingbee_words,
         "letters": ''.join(letters),
         "center_letter": center_letter,
-        "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+        "date": date,
         "guesses": [],
     }
     
@@ -69,7 +69,7 @@ def load_spellingbee_data(stdscr):
     except ValueError as e:
         import pdb; pdb.set_trace()
 
-    update_spellingbee_data(spellingbee_words, center_letter)
+    update_spellingbee_data(spellingbee_words, center_letter, date)
 
     with open(SPELLINGBEE_FILENAME, "r") as f:
         spellingbee_data = json.load(f)
