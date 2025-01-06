@@ -34,13 +34,6 @@ async def loading_animation(stdscr, fetch_fn, message, min_time=1):
                 
                 idx += 1
                 await asyncio.sleep(0.1)
-                
-                try:
-                    key = stdscr.getch()
-                    if key == ord('q'):
-                        return None
-                except curses.error:
-                    pass
         
             return future.result()
         
