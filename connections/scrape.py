@@ -93,3 +93,11 @@ def fetch_latest_connections_puzzle(dt=None):
     print("Puzzle data saved to {}".format(PUZZLE_FILE))
     
     return puzzle_data
+
+if __name__ == "__main__":
+    try:
+        print(fetch_latest_connections_puzzle().keys())
+    except Exception as e:
+        print(f"Error: {e}")
+        import pdb; pdb.post_mortem()
+        exit()
