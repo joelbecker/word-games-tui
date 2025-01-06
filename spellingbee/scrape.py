@@ -62,7 +62,7 @@ def validate_spellingbee_words(spellingbee_words, center_letter):
 
 def load_spellingbee_data(stdscr):
     stdscr.clear()
-    get_spellingbee_words()
+
     center_letter, spellingbee_words, date = run_loading_animation(stdscr, get_spellingbee_words, "Fetching SpellingBee words...", min_time=0.5)
     try:
         validate_spellingbee_words(spellingbee_words, center_letter)
