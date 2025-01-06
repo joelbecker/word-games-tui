@@ -17,7 +17,10 @@ def get_spellingbee_words():
     center_letter = re.search(r"alt=\"center letter (\w)", response.text).group(1).lower()
     spellingbee_words = [w.lower() for w in re.findall(r"https://www.sbsolver.com/\w/(\w+)", response.text) if len(w) > 3 and w.isalpha()]
 
-    return center_letter, spellingbee_words
+    soup = bs4.BeautifulSoup(response.text, "html.parser")
+    date = soup.find("span", attrs={"class":"bee-date bee-current bee-loud bee-hover-inverse"}, recursive=True).a.text
+
+    return center_letter, spellingbee_words, date
 
 def update_spellingbee_data(spellingbee_words, center_letter):
     letters = set(center_letter)
@@ -59,7 +62,8 @@ def validate_spellingbee_words(spellingbee_words, center_letter):
 
 def load_spellingbee_data(stdscr):
     stdscr.clear()
-    center_letter, spellingbee_words = run_loading_animation(stdscr, get_spellingbee_words, "Fetching SpellingBee words...", min_time=0.5)
+    get_spellingbee_words()
+    center_letter, spellingbee_words, date = run_loading_animation(stdscr, get_spellingbee_words, "Fetching SpellingBee words...", min_time=0.5)
     try:
         validate_spellingbee_words(spellingbee_words, center_letter)
     except ValueError as e:
