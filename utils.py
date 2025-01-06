@@ -21,6 +21,8 @@ def justify(s, block=15, width=WIDTH, justify='left'):
     result = centered.replace(reference, s)
     return result
 
+def center_text(stdscr, text):
+    return justify(text, justify='center', width=display_cols(stdscr))
 
 def display_rows(stdscr):
     return min(stdscr.getmaxyx()[0], 24)
@@ -39,6 +41,10 @@ def horizontal_buffer(content_cols, display_cols):
 
 
 class Palette:
+
+    @staticmethod
+    def from_name(name):
+        return getattr(Palette, name)()
 
     @staticmethod
     def purple():
