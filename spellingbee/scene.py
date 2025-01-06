@@ -1,4 +1,5 @@
 import curses
+import math
 import random
 from dataclasses import dataclass
 from english_dictionary.scripts.read_pickle import get_dict
@@ -137,7 +138,7 @@ class SpellingBeeGame:
         if full_update:
             stdscr.clear()
         
-        vertical_offset = utils.vertical_buffer(GRID_HEIGHT, utils.display_rows(stdscr))
+        vertical_offset = math.floor(utils.vertical_buffer(GRID_HEIGHT, utils.display_rows(stdscr)) * 0.8)
         horizontal_offset = utils.horizontal_buffer(GRID_WIDTH, utils.display_cols(stdscr))
         
         if full_update or reshuffle:
