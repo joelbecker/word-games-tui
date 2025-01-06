@@ -34,9 +34,6 @@ def get_connections_puzzle(url):
     html_lists = soup.find_all("ul")
     word_list = [l for l in html_lists if is_word_category_list(l)][0].find_all('li')
 
-
-    # TODO: Parsing fails for Dec 6th puzzle, likely because of special characters in the category name
-
     category_names = {
         'yellow': word_list[0].p.strong.text,
         'green': word_list[1].p.strong.text,
