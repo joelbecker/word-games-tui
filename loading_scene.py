@@ -26,7 +26,7 @@ async def loading_animation(stdscr, fetch_fn, message, min_time=1):
         try:
             future = executor.submit(fetch_fn)
             # Wait for both minimum time AND future completion
-            while future.running() or (datetime.now() - start_time) < timedelta(seconds=min_time):
+            while not future.done() or (datetime.now() - start_time) < timedelta(seconds=min_time):
                 vbuffer = vertical_buffer(1, display_rows(stdscr))
                 hbuffer = horizontal_buffer(len(message) + 1, display_cols(stdscr))
                 stdscr.addstr(vbuffer, hbuffer, message + animation[idx % len(animation)])
