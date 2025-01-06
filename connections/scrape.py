@@ -10,6 +10,10 @@ PUZZLE_FILE = os.path.expanduser('~/.wordgames/connections.json')
 
 
 def parse_word_list(s):
+    # Occasionally, there are typos in the scraped data.
+    # This fixes at least one puzzle, and doesn't seem to cause issues.
+    s = s.replace('.', ',')
+    
     split_words = s.split(': ')[1].split(', ')
     return [word.lower() for word in split_words]
 
