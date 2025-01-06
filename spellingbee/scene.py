@@ -3,6 +3,7 @@ import random
 from dataclasses import dataclass
 from english_dictionary.scripts.read_pickle import get_dict
 
+from spellingbee.scrape import load_spellingbee_data
 import utils
 
 GRID_TEMPLATE = open("spellingbee/grid.txt").read()
@@ -160,34 +161,16 @@ def spellingbee_scene(stdscr):
     stdscr.timeout(100)
     stdscr.clear()
 
+
+    spellingbee_data = load_spellingbee_data(stdscr)
+    solution_words = spellingbee_data["spellingbee_words"]
+    center_letter = spellingbee_data["center_letter"]
+    letters = spellingbee_data["letters"]
+
     game = SpellingBeeGame(
-        letters="agilnt",
-        center_letter="h",
-        solution_words=[
-            "halal",
-            "hatha",
-            "light",
-            "night",
-            "ninth",
-            "thigh",
-            "thing",
-            "tight",
-            "tilth",
-            "hail",
-            "hall",
-            "halt",
-            "hang",
-            "hath",
-            "high",
-            "hill",
-            "hilt",
-            "hint",
-            "lath",
-            "nigh",
-            "than",
-            "that",
-            "thin",
-        ],
+        letters=letters,
+        center_letter=center_letter,
+        solution_words=solution_words,
     )
     
     game.update_display(stdscr, full_update=True)

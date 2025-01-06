@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from utils import vertical_buffer, horizontal_buffer, display_rows, display_cols
 from concurrent.futures import ThreadPoolExecutor
 
-async def loading_animation(stdscr, fetch_fn, message):
+async def loading_animation(stdscr, fetch_fn, message, min_time=1):
     """
     Display a loading animation while waiting for fetch_fn to complete.
     
@@ -26,7 +26,7 @@ async def loading_animation(stdscr, fetch_fn, message):
         future = executor.submit(fetch_fn)
         
         # Wait for both minimum time AND future completion
-        while future.running() or (datetime.now() - start_time) < timedelta(seconds=1):
+        while future.running() or (datetime.now() - start_time) < timedelta(seconds=min_time):
             vbuffer = vertical_buffer(1, display_rows(stdscr))
             hbuffer = horizontal_buffer(len(message) + 1, display_cols(stdscr))
             stdscr.addstr(vbuffer, hbuffer, message + animation[idx % len(animation)])
@@ -45,8 +45,8 @@ async def loading_animation(stdscr, fetch_fn, message):
     return future.result()
 
 # Helper function to run the animation in the event loop
-def run_loading_animation(stdscr, fetch_fn, message):
+def run_loading_animation(stdscr, fetch_fn, message, min_time=1):
     """
     Wrapper function to run the loading animation in the event loop.
     """
-    return asyncio.run(loading_animation(stdscr, fetch_fn, message))
+    return asyncio.run(loading_animation(stdscr, fetch_fn, message, min_time))
