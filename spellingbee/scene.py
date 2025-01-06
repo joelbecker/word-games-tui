@@ -17,15 +17,6 @@ GRID_CHARACTER_COLOR_MAPPING = [
 
 dictionary = get_dict().keys()
 
-def score_word(word: str) -> int:
-    if len(word) < 4:
-        return 0
-    if len(word) == 4:
-        return 1
-    else:
-        return len(word)
-
-
 def get_rank(score: int, max_score: int) -> str:
     percentage = score / max_score
     if percentage < 0.02:
@@ -67,8 +58,12 @@ class SpellingBeeGame:
         self.center_letter = center_letter.lower()
         self.solution_words = set(solution_words)
         self.score = score
-        self.max_score = sum(score_word(word) for word in self.solution_words)
-        self.message = "Welcome to Spelling Bee!"
+        self.max_pangrams = sum(1 for word in self.solution_words if self.is_pangram(word))
+        self.max_perfect_pangrams = sum(1 for word in self.solution_words if self.is_perfect_pangram(word))
+        self.pangrams_found = 0
+        self.perfect_pangrams_found = 0
+        self.max_score = sum(self.score_word(word) for word in self.solution_words)
+        self.message = f"Welcome to Spelling Bee!"
         self.input_buffer = ""
         self.guesses = []
 
@@ -85,6 +80,22 @@ class SpellingBeeGame:
     def is_center_letter(self, letter: chr) -> bool:
         return letter.lower() == self.center_letter
 
+    def is_pangram(self, word: str) -> bool:
+        return set(word.lower()) == self.letters
+    
+    def is_perfect_pangram(self, word: str) -> bool:
+        return self.is_pangram(word) and len(word) == len(self.letters)
+
+    def score_word(self, word: str) -> int:
+        if len(word) < 4:
+            return 0
+        elif len(word) == 4:
+            return 1
+        elif self.is_pangram(word):
+            return len(word) + 7
+        else:
+            return len(word)
+
     def evaluate_guess(self, word: str) -> GuessResult:
         if len(word) < 4:
             return GuessResult(word, 0, False, False, "Too short")
@@ -93,26 +104,36 @@ class SpellingBeeGame:
         if word.lower() in self.guesses:
             return GuessResult(word, 0, False, False, "Already guessed")
         elif word in self.solution_words:
-            return GuessResult(word, score_word(word), True, True, f"{word.upper()} is correct!")
+            if self.is_perfect_pangram(word):
+                self.perfect_pangrams_found += 1
+                self.pangrams_found += 1
+                correct_message = f"{word.upper()} is a perfect pangram!"
+            elif self.is_pangram(word):
+                self.pangrams_found += 1
+                correct_message = f"{word.upper()} is a pangram!"
+            else:
+                correct_message = f"{word.upper()} is correct!"
+            return GuessResult(word, self.score_word(word), True, True, correct_message)
         elif set(word) - self.letters:
             return GuessResult(word, 0, False, False, "Bad letters")
         elif self.check_dictionary(word):
-            return GuessResult(word, 0, True, False, f"{word.upper()} is valid but not the solution")
+            return GuessResult(word, 0, True, False, f"{word.upper()} is not in the solution")
         elif word not in self.solution_words:
-            return GuessResult(word, 0, True, False, f"{word.upper()} Not a word")
+            return GuessResult(word, 0, True, False, f"{word.upper()} is not a word")
         else:
             return GuessResult(word, 0, False, False, "An error occurred")
 
     def guess(self, word: str) -> GuessResult:
         result = self.evaluate_guess(word)
-        self.guesses.append(result.word.lower())
+        if result.is_correct:
+            self.guesses.append(result.word.lower())
         self.message = result.message
         if result.is_correct:
             self.score += result.score
         self.input_buffer = ""
-        return result
+        return word
 
-    def update_display(self, stdscr, full_update: bool = False, guess_submitted: bool = False, reshuffle: bool = False):
+    def update_display(self, stdscr, highlight: bool = False, full_update: bool = False, guess_submitted: bool = False, reshuffle: bool = False):
         if full_update:
             stdscr.clear()
         
@@ -148,8 +169,9 @@ class SpellingBeeGame:
             stdscr.addstr(vertical_offset + GRID_HEIGHT + 2, i, c, color)
 
         if full_update or guess_submitted:
-            score_display = f"{self.score / self.max_score:.2%} / {self.rank} / {self.score}"
-            stdscr.addstr(vertical_offset + GRID_HEIGHT + 4, 0, utils.center_text(stdscr, self.message))
+            score_display = f"{self.score / self.max_score:.2%} / {self.rank} / {self.score} pts"
+            message_color = utils.Palette.yellow() if highlight else utils.Palette.white()
+            stdscr.addstr(vertical_offset + GRID_HEIGHT + 4, 0, utils.center_text(stdscr, self.message), message_color)
             stdscr.addstr(vertical_offset + GRID_HEIGHT + 5, 0, utils.center_text(stdscr, score_display), utils.Palette.gray())
         
         stdscr.refresh()
@@ -160,7 +182,6 @@ def spellingbee_scene(stdscr):
     stdscr.nodelay(1)
     stdscr.timeout(100)
     stdscr.clear()
-
 
     spellingbee_data = load_spellingbee_data(stdscr)
     solution_words = spellingbee_data["spellingbee_words"]
@@ -182,10 +203,16 @@ def spellingbee_scene(stdscr):
                 game.input_buffer = game.input_buffer[:-1]
                 game.update_display(stdscr)
             elif key == curses.KEY_ENTER or key in [10, 13]:
-                game.guess(game.input_buffer)
-                game.update_display(stdscr, guess_submitted=True)
+                word = game.guess(game.input_buffer)
+                game.update_display(stdscr, guess_submitted=True, highlight=game.is_pangram(word))
             elif key == ord('1'):
                 game.update_display(stdscr, reshuffle=True)
+            elif key == ord('2'):
+                game.message = f"Words: {len(game.guesses)}/{len(game.solution_words)}, Score: {game.score}/{game.max_score}"
+                game.update_display(stdscr, guess_submitted=True)
+            elif key == ord('3'):
+                game.message = f"Pangrams: {game.pangrams_found}/{game.max_pangrams}, Perfect pangrams: {game.perfect_pangrams_found}/{game.max_perfect_pangrams}"
+                game.update_display(stdscr, guess_submitted=True)
             elif curses.ascii.isalpha(key):
                 game.input_buffer += chr(key).lower()
                 game.update_display(stdscr)
