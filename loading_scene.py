@@ -23,29 +23,30 @@ async def loading_animation(stdscr, fetch_fn, message, min_time=1):
     start_time = datetime.now()
 
     with ThreadPoolExecutor() as executor:
-        try:
-            future = executor.submit(fetch_fn)
-            # Wait for both minimum time AND future completion
-            while not future.done() or (datetime.now() - start_time) < timedelta(seconds=min_time):
-                vbuffer = vertical_buffer(1, display_rows(stdscr))
-                hbuffer = horizontal_buffer(len(message) + 1, display_cols(stdscr))
-                stdscr.addstr(vbuffer, hbuffer, message + animation[idx % len(animation)])
-                stdscr.refresh()
-                
-                idx += 1
-                await asyncio.sleep(0.1)
+        future = executor.submit(fetch_fn)
+        # Wait for both minimum time AND future completion
+        while not future.done() or (datetime.now() - start_time) < timedelta(seconds=min_time):
+            vbuffer = vertical_buffer(1, display_rows(stdscr))
+            hbuffer = horizontal_buffer(len(message) + 1, display_cols(stdscr))
+            stdscr.addstr(vbuffer, hbuffer, message + animation[idx % len(animation)])
+            stdscr.refresh()
+            
+            idx += 1
+            await asyncio.sleep(0.1)
+
+            if future.exception():
+                stdscr.endwin()
+                e = future.exception()
+                print("An error occurred while loading the puzzle.")
+                if input("Would you like to enter debug mode? (y/n): ").lower() == "y":
+                    print(f"Exception: {e}")
+                    import pdb; pdb.set_trace()
+                    exit()
+                else:
+                    raise e
         
-            return future.result()
-        
-        except Exception as e:
-            stdscr.endwin()
-            print("An error occurred while loading the puzzle.")
-            if input("Would you like to enter debug mode? (y/n): ").lower() == "y":
-                print(f"Exception: {e}")
-                import pdb; pdb.set_trace()
-                exit()
-            else:
-                raise e
+        return future.result()
+    
 
 # Helper function to run the animation in the event loop
 def run_loading_animation(stdscr, fetch_fn, message, min_time=1):
