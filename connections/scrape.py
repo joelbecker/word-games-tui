@@ -1,11 +1,5 @@
-import re
 import os
-import sys
 import json
-import html
-import html.parser
-import calendar
-import subprocess
 from datetime import datetime
 
 import bs4
