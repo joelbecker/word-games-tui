@@ -166,13 +166,13 @@ class SpellingBeeGame:
                 color = utils.Palette.yellow()
             else:
                 color = utils.Palette.white()
-            stdscr.addstr(vertical_offset + GRID_HEIGHT + 2, i, c, color)
+            stdscr.addstr(vertical_offset + GRID_HEIGHT + 1, i, c, color)
 
         if full_update or guess_submitted:
             score_display = f"{self.score / self.max_score:.2%} / {self.rank} / {self.score} pts"
             message_color = utils.Palette.yellow() if highlight else utils.Palette.white()
-            stdscr.addstr(vertical_offset + GRID_HEIGHT + 4, 0, utils.center_text(stdscr, self.message), message_color)
-            stdscr.addstr(vertical_offset + GRID_HEIGHT + 5, 0, utils.center_text(stdscr, score_display), utils.Palette.gray())
+            stdscr.addstr(vertical_offset + GRID_HEIGHT + 3, 0, utils.center_text(stdscr, self.message), message_color)
+            stdscr.addstr(vertical_offset + GRID_HEIGHT + 4, 0, utils.center_text(stdscr, score_display), utils.Palette.gray())
         
         stdscr.refresh()
 
