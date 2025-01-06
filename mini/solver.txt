@@ -1,0 +1,10 @@
+We actually have a lot more information that just the word list, and a lot of ways to narrow down the search space:
+
+* The clue number across and down gives us intersection points at the start of words if they are in both lists, and the rest must occur in not the first position of a word.
+* We can prioritize rarer letters. E.g. if there is only one w in each list, we know they must intersect at that position.
+    * As letters are used, they can be removed from the list of possible letters, which may create new unique letters to match.
+* Treat blank spaces as letters, so that they don't require special handling.
+
+Ultimately, the solution needs to yield a 1:1 mapping between the letters in the two lists. But, we don't need to logic out every single mapping. All we need is for the word lists to be "fully connected" where each word has one known intersection creating a single network of words.
+
+A single algorithm could just operate on strings; you start with known intersections, and then audition possible overlap configurations for unconnected word bundles. This would be more of a brute force approach than a deduction-based one. But there would be lots of ways to prune possibilities, e.g. by only considering overlaps that don't violate the numbered progression of words. This approach is also easy to visualize, since it's accumulating chungs of the solution that can be easily visualized.
