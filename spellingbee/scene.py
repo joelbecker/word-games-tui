@@ -205,7 +205,8 @@ def spellingbee_scene(stdscr):
                 game.update_display(stdscr)
             elif key == curses.KEY_ENTER or key in [10, 13]:
                 word = game.guess(game.input_buffer)
-                game.update_display(stdscr, guess_submitted=True, highlight=game.is_pangram(word))
+                is_correct_pangram = word.is_correct and game.is_pangram(word)
+                game.update_display(stdscr, guess_submitted=True, highlight=is_correct_pangram)
             elif key == ord('1'):
                 game.update_display(stdscr, reshuffle=True)
             elif key == ord('2'):
