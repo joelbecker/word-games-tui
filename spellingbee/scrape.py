@@ -4,13 +4,29 @@ import bs4
 import json
 import requests
 import datetime
+import logging
 import english_dictionary.scripts.read_pickle as dictionary
 
 from loading_scene import run_loading_animation
 
 SPELLINGBEE_FILENAME = os.path.expanduser("~/.wordgames/spellingbee.json")
+SPELLINGBEE_LOG = os.path.expanduser("~/.wordgames/spellingbee.log")
 
 DICTIONARY = dictionary.get_dict()
+
+# Set up logging
+logging.basicConfig(
+    filename=SPELLINGBEE_LOG,
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
+
+def is_valid_spellingbee_word(word):
+    is_valid_format = len(word) > 3 and word.isalpha() 
+    is_valid_word = word in DICTIONARY
+    if not is_valid_word:
+        logging.info(f"Invalid word attempted: {word}")
+    return is_valid_format and is_valid_word
 
 def get_spellingbee_words():
     url = "https://www.sbsolver.com/answers"
@@ -20,7 +36,7 @@ def get_spellingbee_words():
     center_letter = re.search(r"alt=\"center letter (\w)", response.text).group(1).lower()
     spellingbee_words = [
         w.lower() for w in re.findall(r"https://www.sbsolver.com/\w/(\w+)", response.text)
-        if len(w) > 3 and w.isalpha() and w in DICTIONARY
+        if is_valid_spellingbee_word(w)
     ]
 
     soup = bs4.BeautifulSoup(response.text, "html.parser")
