@@ -1,11 +1,13 @@
 import curses
 import math
 import random
+import english_dictionary.scripts.read_pickle as dictionary
 from dataclasses import dataclass
-from english_dictionary.scripts.read_pickle import get_dict
 
-from spellingbee.scrape import load_spellingbee_data
 import utils
+from spellingbee.scrape import load_spellingbee_data
+
+DICTIONARY = [w.lower() for w in dictionary.get_dict().keys()]
 
 GRID_TEMPLATE = open("spellingbee/grid.txt").read()
 GRID_WIDTH = len(GRID_TEMPLATE.split("\n")[0])
@@ -16,7 +18,6 @@ GRID_CHARACTER_COLOR_MAPPING = [
     (GRID_WIDTH*4 + 4, GRID_WIDTH*4 + 9, "yellow"),
 ]
 
-dictionary = get_dict().keys()
 
 def get_rank(score: int, max_score: int) -> str:
     percentage = score / max_score
@@ -73,7 +74,7 @@ class SpellingBeeGame:
         return get_rank(self.score, self.max_score)
 
     def check_dictionary(self, word: str) -> bool:
-        return word in dictionary
+        return word in DICTIONARY
     
     def is_letter(self, letter: chr) -> bool:
         return letter.lower() in self.letters

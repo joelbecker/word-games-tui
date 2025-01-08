@@ -5,14 +5,12 @@ import json
 import requests
 import datetime
 import logging
-import english_dictionary.scripts.read_pickle as dictionary
+
 
 from loading_scene import run_loading_animation
 
 SPELLINGBEE_FILENAME = os.path.expanduser("~/.wordgames/spellingbee.json")
 SPELLINGBEE_LOG = os.path.expanduser("~/.wordgames/spellingbee.log")
-
-DICTIONARY = dictionary.get_dict()
 
 # Set up logging
 logging.basicConfig(
@@ -23,10 +21,14 @@ logging.basicConfig(
 
 def is_valid_spellingbee_word(word):
     is_valid_format = len(word) > 3 and word.isalpha() 
-    is_valid_word = word in DICTIONARY
-    if not is_valid_word:
-        logging.info(f"Invalid word attempted: {word}")
-    return is_valid_format and is_valid_word
+
+    # Scraped page contains non-words like cdEklow that need to be removed
+    # These are always the 7 letters with one emphasized by case
+    is_non_word = word != word.lower() and len(set(word)) == 7
+    if not is_non_word:
+        logging.info(f"Removed non-word: {word}")
+
+    return is_valid_format and not is_non_word
 
 def get_spellingbee_words():
     url = "https://www.sbsolver.com/answers"
