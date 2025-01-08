@@ -4,10 +4,13 @@ import bs4
 import json
 import requests
 import datetime
+import english_dictionary.scripts.read_pickle as dictionary
 
 from loading_scene import run_loading_animation
 
 SPELLINGBEE_FILENAME = os.path.expanduser("~/.wordgames/spellingbee.json")
+
+DICTIONARY = dictionary.get_dict()
 
 def get_spellingbee_words():
     url = "https://www.sbsolver.com/answers"
@@ -15,7 +18,10 @@ def get_spellingbee_words():
     response = requests.get(url)
 
     center_letter = re.search(r"alt=\"center letter (\w)", response.text).group(1).lower()
-    spellingbee_words = [w.lower() for w in re.findall(r"https://www.sbsolver.com/\w/(\w+)", response.text) if len(w) > 3 and w.isalpha()]
+    spellingbee_words = [
+        w.lower() for w in re.findall(r"https://www.sbsolver.com/\w/(\w+)", response.text)
+        if len(w) > 3 and w.isalpha() and w in DICTIONARY
+    ]
 
     soup = bs4.BeautifulSoup(response.text, "html.parser")
     date = soup.find("span", attrs={"class":"bee-date bee-current bee-loud bee-hover-inverse"}, recursive=True).a.text
