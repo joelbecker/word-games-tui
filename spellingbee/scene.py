@@ -3,13 +3,14 @@ import math
 import random
 import english_dictionary.scripts.read_pickle as dictionary
 from dataclasses import dataclass
+import os.path
 
 import utils
 from spellingbee.scrape import load_spellingbee_data
 
 DICTIONARY = [w.lower() for w in dictionary.get_dict().keys()]
-
-GRID_TEMPLATE = open("spellingbee/grid.txt").read()
+SPELLINGBEE_DIR = os.path.dirname(os.path.abspath(__file__))
+GRID_TEMPLATE = open(os.path.join(SPELLINGBEE_DIR, "grid.txt")).read()
 GRID_WIDTH = len(GRID_TEMPLATE.split("\n")[0])
 GRID_HEIGHT = len(GRID_TEMPLATE.split("\n"))
 GRID_CHARACTER_COLOR_MAPPING = [
