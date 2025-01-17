@@ -1,12 +1,20 @@
 import os
 import json
 from datetime import datetime
+import logging
 
 import bs4
 import requests
 
 
 PUZZLE_FILE = os.path.expanduser('~/.wordgames/connections.json')
+LOG_FILE = os.path.expanduser('~/.wordgames/connections.log')
+
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 
 def parse_word_list(s):
@@ -22,21 +30,36 @@ def is_word_category_list(ul):
     list_items = ul.find_all('li')
     if len(list_items) != 4:
         return False
-    return all([len(parse_word_list(li.p.text)) == 4 for li in list_items])
+    
+    parsed_word_lists = [parse_word_list(li.p.text) for li in list_items]
+    word_counts = [len(l) for l in parsed_word_lists]
+    is_valid = all([count == 4 for count in word_counts])
+    any_valid = any([count == 4 for count in word_counts])
+    if any_valid and not is_valid:
+        logging.info(f"Raw HTML list: {ul}")
+        logging.info(f"Possible false positive. Word counts: {word_counts} Word lists: {parsed_word_lists}")
+    
+    return is_valid
 
 
 def get_connections_puzzle(url):
+    logging.info(f"Fetching puzzle from {url}")
     response = requests.get(url)
     soup = bs4.BeautifulSoup(response.text, "html.parser")
     
     html_lists = soup.find_all("ul")
-    word_list = [l for l in html_lists if is_word_category_list(l)][0].find_all('li')
+    
+    word_lists = [l for l in html_lists if is_word_category_list(l)]
+    if not word_lists:
+        logging.error("No valid word category lists found in the page")
+        raise ValueError("Could not find word categories in the page")
+    word_list = word_lists[0].find_all('li')
 
     category_names = {
         'yellow': word_list[0].p.strong.text,
         'green': word_list[1].p.strong.text,
         'blue': word_list[2].p.strong.text,
-        'purple': word_list[3].p.strong.text
+        'purple': word_list[3].p.strong.text.strip(":")
     }
 
     category_words = {
