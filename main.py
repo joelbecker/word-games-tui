@@ -38,27 +38,29 @@ def main(stdscr):
     vbuffer = utils.vertical_buffer(len(games), utils.display_rows(stdscr))
     hbuffer = utils.horizontal_buffer(max(len(game.name) for game in games), utils.display_cols(stdscr))
     stdscr.clear()
-
-    while True:
-        for idx, option in enumerate(games):
-            if idx == current_option:
-                stdscr.addstr(vbuffer+idx, hbuffer, f"> {option.name.upper()}\n", option.color | curses.A_BOLD)
-            else:
-                stdscr.addstr(vbuffer+idx, hbuffer, f"  {option.name.upper()}\n", Palette.white())
-        
-        stdscr.refresh()
-        
-        key = stdscr.getch()
-        
-        if key == curses.KEY_UP or key == ord('k'):
-            current_option = (current_option - 1) % len(games)
-        elif key == curses.KEY_DOWN or key == ord('j'):
-            current_option = (current_option + 1) % len(games)
-        elif key == ord('q'):
-            break
-        elif key == ord('\n'):
-            stdscr.clear()
+    try:
+        while True:
+            for idx, option in enumerate(games):
+                if idx == current_option:
+                    stdscr.addstr(vbuffer+idx, hbuffer, f"> {option.name.upper()}\n", option.color | curses.A_BOLD)
+                else:
+                    stdscr.addstr(vbuffer+idx, hbuffer, f"  {option.name.upper()}\n", Palette.white())
+            
             stdscr.refresh()
-            games[current_option].func(stdscr)
+            
+            key = stdscr.getch()
+            
+            if key == curses.KEY_UP or key == ord('k'):
+                current_option = (current_option - 1) % len(games)
+            elif key == curses.KEY_DOWN or key == ord('j'):
+                current_option = (current_option + 1) % len(games)
+            elif key == ord('q'):
+                break
+            elif key == ord('\n'):
+                stdscr.clear()
+                stdscr.refresh()
+                games[current_option].func(stdscr)
+    except KeyboardInterrupt:
+        exit
 
 curses.wrapper(main)

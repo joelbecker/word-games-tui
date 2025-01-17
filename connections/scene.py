@@ -287,44 +287,49 @@ def connections_controller(words, categories, stdscr):
     state = ConnectionsGame(words, categories, stdscr)
     state.sort()
     state.update_display(full_update=True)
-    while True:
-        key = stdscr.getch()
+    try:
+        while True:
+            key = stdscr.getch()
 
-        if key == ord('k'):
-            state.up()
-            state.update_display(full_update=False)
-        elif key == ord('j'):
-            state.down()
-            state.update_display(full_update=False)
-        elif key == ord('s'):
-            state.select()
-            state.update_display(full_update=False)
-        elif key == ord('g'):
-            state.guess()
-            state.update_display(full_update=True)
-        elif key == ord('r'):
-            state.shuffle()
-            state.update_display(full_update=True)
-        elif key == ord('f'):
-            state.words[state.cursor].flag = curses.ascii.ascii("?")
-            state.sort()
-            state.update_display()
-        elif key == ord('c'):
-            for w in state.words:
-                w.flag = None
-                w.is_selected = False
-            state.update_display()
-        elif key == ord('1'):
-            state.message = "Cheat code activated."
-            for w in state.words:
-                w.category.solved()
-            state.sort()
-            state.update_display(full_update=True)
-        elif key == ord('q'):
-            stdscr.clear()
-            break
-        else:
-            continue
+            if key == ord('k'):
+                state.up()
+                state.update_display(full_update=False)
+            elif key == ord('j'):
+                state.down()
+                state.update_display(full_update=False)
+            elif key == ord('s'):
+                state.select()
+                state.update_display(full_update=False)
+            elif key == ord('g'):
+                state.guess()
+                state.update_display(full_update=True)
+            elif key == ord('r'):
+                state.shuffle()
+                state.update_display(full_update=True)
+            elif key == ord('f'):
+                state.words[state.cursor].flag = curses.ascii.ascii("?")
+                state.sort()
+                state.update_display()
+            elif key == ord('c'):
+                for w in state.words:
+                    w.flag = None
+                    w.is_selected = False
+                state.update_display()
+            elif key == ord('1'):
+                state.message = "Cheat code activated."
+                for w in state.words:
+                    w.category.solved()
+                state.sort()
+                state.update_display(full_update=True)
+            elif key == ord('q'):
+                stdscr.clear()
+                break
+            else:
+                continue
+    except KeyboardInterrupt:
+        stdscr.clear()
+        stdscr.refresh()
+        exit
 
 
 def load_puzzle():
