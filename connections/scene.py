@@ -161,6 +161,7 @@ class ConnectionsGame:
             for c in self.categories:
                 c.solved()
             self.message = "Out of guesses!"
+            self.sort()
             self.update_display()
         elif score == 4:
             self.message = "Correct! Mistakes remaining: {}".format(self.mistakes_remaining)
