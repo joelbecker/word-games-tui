@@ -9,7 +9,6 @@ dates = [
     datetime(2024, 12, 9),
     datetime(2024, 12, 10),
     datetime(2024, 12, 11),
-    datetime(2024, 12, 12),
     datetime(2025, 1, 1),
     datetime(2025, 1, 2),
     datetime(2025, 1, 6),
