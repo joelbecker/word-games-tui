@@ -7,11 +7,7 @@ import curses.ascii
 import utils
 from wordle.scrape import WORDLE_FILENAME, load_wordle_data
 
-# load words
-WORDLE_DIR = os.path.dirname(__file__)
-with open(os.path.join(WORDLE_DIR, "words.txt"), "r") as f:
-    WORD_LIST = [s.strip() for s in f.readlines()]
-    
+WORDLE_DIR = os.path.dirname(__file__)    
 KEYBOARD = "q w e r t y u i o p\na s d f g h j k l  \n  z x c v b n m      ".split("\n")
 
 
@@ -24,6 +20,9 @@ class WordleGame:
         self.green_letters = set()
         self.yellow_letters = set()
         self.guessed_letters = set()
+        # load words
+        with open(os.path.join(WORDLE_DIR, "words.txt"), "r") as f:
+            self.word_list = [s.strip() for s in f.readlines()]
 
     def is_win(self):
         return len(self.guesses) > 0 and self.guesses[-1] == self.secret
@@ -35,7 +34,7 @@ class WordleGame:
         if len(guess) != 5:
             return "Guesses must be five letters"
         
-        if guess not in WORD_LIST:
+        if guess not in self.word_list:
             return "Not a valid word!"
         
         if guess in self.guesses:
