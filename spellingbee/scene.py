@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import utils
 from spellingbee.scrape import load_spellingbee_data
 
-DICTIONARY = [w.lower() for w in dictionary.get_dict().keys()]
+
 SPELLINGBEE_DIR = os.path.dirname(os.path.abspath(__file__))
 GRID_TEMPLATE = open(os.path.join(SPELLINGBEE_DIR, "grid.txt")).read()
 GRID_WIDTH = len(GRID_TEMPLATE.split("\n")[0])
@@ -60,6 +60,7 @@ class SpellingBeeGame:
         self.letters = set(letters.lower()).union(set(center_letter.lower()))
         self.center_letter = center_letter.lower()
         self.solution_words = set(solution_words)
+        self.dictionary = dictionary.get_dict()
         self.score = score
         self.max_pangrams = sum(1 for word in self.solution_words if self.is_pangram(word))
         self.max_perfect_pangrams = sum(1 for word in self.solution_words if self.is_perfect_pangram(word))
@@ -75,7 +76,7 @@ class SpellingBeeGame:
         return get_rank(self.score, self.max_score)
 
     def check_dictionary(self, word: str) -> bool:
-        return word in DICTIONARY
+        return word in self.dictionary
     
     def is_letter(self, letter: chr) -> bool:
         return letter.lower() in self.letters
