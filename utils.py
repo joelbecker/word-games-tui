@@ -1,5 +1,5 @@
-import curses
 import re
+import curses
 
 
 WIDTH = 50
