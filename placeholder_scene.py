@@ -1,4 +1,3 @@
-from datetime import datetime
 from utils import vertical_buffer, horizontal_buffer, display_cols, display_rows
 
 def placeholder_scene(stdscr):

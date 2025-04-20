@@ -1,5 +1,4 @@
 import asyncio
-import curses
 from datetime import datetime, timedelta
 from utils import vertical_buffer, horizontal_buffer, display_rows, display_cols
 from concurrent.futures import ThreadPoolExecutor

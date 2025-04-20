@@ -1,14 +1,14 @@
-import curses
-from dataclasses import dataclass
-
 import utils
+import curses
 from utils import Palette
 from typing import Callable
-from placeholder_scene import placeholder_scene
-from connections.scene import connections_scene
+from dataclasses import dataclass
+
 from wordle.scene import wordle_scene
 from mini.scene import mini_demo_scene
+from connections.scene import connections_scene
 from spellingbee.scene import spellingbee_scene
+from placeholder_scene import placeholder_scene
 
 @dataclass
 class WordGame:

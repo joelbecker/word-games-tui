@@ -1,11 +1,9 @@
-import json
 import os
-import random
 import curses
 import curses.ascii
 
 import utils
-from wordle.scrape import WORDLE_FILENAME, load_wordle_data
+from wordle.scrape import load_wordle_data
 
 WORDLE_DIR = os.path.dirname(__file__)    
 KEYBOARD = "q w e r t y u i o p\na s d f g h j k l  \n  z x c v b n m      ".split("\n")

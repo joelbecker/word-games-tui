@@ -1,9 +1,9 @@
-import curses
 import math
+import curses
 import random
+import os.path
 import english_dictionary.scripts.read_pickle as dictionary
 from dataclasses import dataclass
-import os.path
 
 import utils
 from spellingbee.scrape import load_spellingbee_data

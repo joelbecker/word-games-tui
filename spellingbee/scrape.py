@@ -1,11 +1,7 @@
 import re
 import os
-import bs4
 import json
-import requests
-import datetime
 import logging
-
 
 from loading_scene import run_loading_animation
 
@@ -31,6 +27,8 @@ def is_valid_spellingbee_word(word):
     return is_valid_format and not is_non_word
 
 def get_spellingbee_words():
+    import bs4
+    import requests
     url = "https://www.sbsolver.com/answers"
 
     response = requests.get(url)

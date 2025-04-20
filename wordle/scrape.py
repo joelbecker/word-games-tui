@@ -1,8 +1,5 @@
 import os
-import bs4
 import json
-import curses
-import requests
 import datetime
 
 from loading_scene import run_loading_animation
@@ -10,6 +7,8 @@ from loading_scene import run_loading_animation
 WORDLE_FILENAME = os.path.expanduser("~/.wordgames/wordle.json")
 
 def get_wordle_answer():
+    import bs4
+    import requests
     month = datetime.datetime.now().strftime("%B").lower()
     day = str(int(datetime.datetime.now().strftime("%d")))
     year = datetime.datetime.now().strftime("%Y")

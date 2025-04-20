@@ -3,9 +3,6 @@ import json
 from datetime import datetime
 import logging
 
-import bs4
-import requests
-
 
 PUZZLE_FILE = os.path.expanduser('~/.wordgames/connections.json')
 LOG_FILE = os.path.expanduser('~/.wordgames/connections.log')
@@ -43,9 +40,11 @@ def is_word_category_list(ul):
 
 
 def get_connections_puzzle(url):
+    from bs4 import BeautifulSoup
+    from requests import get
     logging.info(f"Fetching puzzle from {url}")
-    response = requests.get(url)
-    soup = bs4.BeautifulSoup(response.text, "html.parser")
+    response = get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
     
     html_lists = soup.find_all("ul")
     
