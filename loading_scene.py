@@ -1,9 +1,9 @@
-import asyncio
 from datetime import datetime, timedelta
 from utils import vertical_buffer, horizontal_buffer, display_rows, display_cols
 from concurrent.futures import ThreadPoolExecutor
 
 async def loading_animation(stdscr, fetch_fn, message, min_time=1):
+    import asyncio
     """
     Display a loading animation while waiting for fetch_fn to complete.
     
