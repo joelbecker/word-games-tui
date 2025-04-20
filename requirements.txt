@@ -1,5 +1,4 @@
 beautifulsoup4
 requests
 english_dictionary
-undetected-chromedriver
 selenium
