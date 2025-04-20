@@ -1,16 +1,4 @@
-def scrape_with_selenium(url):
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    
-    chrome_options = Options()
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument('--no-sandbox')
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get(url)
-    html = driver.page_source
-    driver.quit()
-    return html
-
+from utils import scrape_with_selenium
 
 def get_mini_puzzle():
     import bs4

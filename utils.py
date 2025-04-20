@@ -5,6 +5,20 @@ import curses
 WIDTH = 50
 
 
+def scrape_with_selenium(url):
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(url)
+    html = driver.page_source
+    driver.quit()
+    return html
+
+
 def strip_ansi(s):
     return re.sub(r'\x1b[^m]*m', '', s)
      
