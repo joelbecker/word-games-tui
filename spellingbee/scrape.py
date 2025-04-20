@@ -4,6 +4,7 @@ import json
 import logging
 
 from loading_scene import run_loading_animation
+from utils import scrape_with_selenium
 
 SPELLINGBEE_FILENAME = os.path.expanduser("~/.wordgames/spellingbee.json")
 SPELLINGBEE_LOG = os.path.expanduser("~/.wordgames/spellingbee.log")
@@ -28,18 +29,18 @@ def is_valid_spellingbee_word(word):
 
 def get_spellingbee_words():
     import bs4
-    import requests
     url = "https://www.sbsolver.com/answers"
 
-    response = requests.get(url)
+    # Use scrape_with_selenium to fetch the page source
+    response_text = scrape_with_selenium(url)
 
-    center_letter = re.search(r"alt=\"center letter (\w)", response.text).group(1).lower()
+    center_letter = re.search(r"alt=\"center letter (\w)", response_text).group(1).lower()
     spellingbee_words = [
-        w.lower() for w in re.findall(r"https://www.sbsolver.com/\w/(\w+)", response.text)
+        w.lower() for w in re.findall(r"https://www.sbsolver.com/\w/(\w+)", response_text)
         if is_valid_spellingbee_word(w)
     ]
 
-    soup = bs4.BeautifulSoup(response.text, "html.parser")
+    soup = bs4.BeautifulSoup(response_text, "html.parser")
     date = soup.find("span", attrs={"class":"bee-date bee-current bee-loud bee-hover-inverse"}, recursive=True).a.text
 
     return center_letter, spellingbee_words, date
