@@ -29,19 +29,28 @@ def is_valid_spellingbee_word(word):
 
 def get_spellingbee_words():
     import bs4
-    url = "https://www.sbsolver.com/answers"
+    url = "https://www.nytimes.com/puzzles/spelling-bee"
 
     # Use scrape_with_selenium to fetch the page source
-    response_text = scrape_with_selenium(url)
+    html = scrape_with_selenium(url)
+    # Temporary to avoid rate limiting
+    # with open(os.path.expanduser("~/Downloads/spellingbee.html"), "r") as f:
+    #     html = f.read()
 
-    center_letter = re.search(r"alt=\"center letter (\w)", response_text).group(1).lower()
-    spellingbee_words = [
-        w.lower() for w in re.findall(r"https://www.sbsolver.com/\w/(\w+)", response_text)
-        if is_valid_spellingbee_word(w)
-    ]
+    soup = bs4.BeautifulSoup(html, "html.parser")
+    game_data_raw = soup.find(
+        "div",
+        attrs={
+            "id": "js-hook-pz-moment__game"
+        },
+        recursive=True
+    ).script.text.replace("window.gameData = ", "").replace(";", "")
+    
+    game_data = json.loads(game_data_raw)
 
-    soup = bs4.BeautifulSoup(response_text, "html.parser")
-    date = soup.find("span", attrs={"class":"bee-date bee-current bee-loud bee-hover-inverse"}, recursive=True).a.text
+    date = game_data["today"]["printDate"]
+    center_letter = game_data["today"]["centerLetter"]
+    spellingbee_words = game_data["today"]["answers"]
 
     return center_letter, spellingbee_words, date
 
