@@ -155,6 +155,7 @@ class CrosswordController:
         new_coords = (self.puzzle.cursor_row + rows, self.puzzle.cursor_col + cols)
         if not self.puzzle.is_out_of_bounds(*new_coords):
             self.puzzle.cursor_row, self.puzzle.cursor_col = new_coords
+            # TODO: This isn't working. Cycle isn't updating when cursor moves with this method.
             self.puzzle.valid_cells.select(new_coords)
     
     def move_cursor_up(self):
