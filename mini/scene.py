@@ -1,12 +1,15 @@
-import random
+import utils
+import curses
 from time import sleep
 from typing import Iterable, Callable
 from mini.cycle import Cycle
-import utils
 
+# TODO: Add puzzle state (not solution)
+# TODO: Add cell input
 # TODO: Add cell->word mappings
+# TODO: Add clue display
 
-class CrosswordGrid:
+class Crossword:
 
     def __init__(self, cells: list[list[str]], null_charcter_fn: Callable[[chr], str] = None) -> None:
         # definition
@@ -132,9 +135,9 @@ class CrosswordGrid:
         stdscr.refresh()
     
 
-class IndexController:
+class CrosswordController:
 
-    def __init__(self, puzzle: CrosswordGrid):
+    def __init__(self, puzzle: Crossword):
         self.puzzle = puzzle
 
     def cycle_cell(self, auto_skip: bool = True, condition: Callable[[int, int], bool] = lambda i, j: True):
@@ -172,7 +175,6 @@ class IndexController:
             else:
                 continue
 
-
     def cycle_lane(self, auto_skip: bool = True):
         if self.puzzle.cursor_h:
             next_lane_condition = lambda i, j: i != self.puzzle.cursor_row
@@ -183,90 +185,35 @@ class IndexController:
             next_lane_condition
         )
 
-def parse_puzzle(s: str) -> list[list[str]]:
-    return [[c if c.isalpha() else None for c in list(row)] for row in s.strip().split("\n")]
+    def run(self, stdscr):
+        self.puzzle.update_display(stdscr, full_update=True)
+        try:
+            while True:
+                key = stdscr.getch()
+                if key == curses.KEY_BACKSPACE or key == 127:
+                    # TODO: Implement cycle backwards
+                    pass
+                elif key == curses.KEY_ENTER or key in [10, 13]:
+                    self.cycle_lane(auto_skip=False)
+                elif key == ord(" "):
+                    self.cycle_cell(auto_skip=False)
+                elif curses.ascii.isalpha(key):
+                    self.puzzle.cells[self.puzzle.cursor_row][self.puzzle.cursor_col] = str(chr(key)).upper()
+                    self.cycle_cell(auto_skip=False)
+                else:
+                    continue
+                self.puzzle.update_display(stdscr, full_update=True)
+        except KeyboardInterrupt:
+            stdscr.clear()
+            stdscr.refresh()
+            return
+        
+def mini_scene(stdscr):
+    stdscr.clear()
 
+    from mini.example_puzzles import puzzle_1, parse_puzzle
+    puzzle = parse_puzzle(puzzle_1)
+    crossword = Crossword(puzzle)
+    controller = CrosswordController(crossword)
 
-puzzle_1 = """
-.ROSE
-COUPS
-OWNUP
-DECRY
-EDEN.
-"""
-
-puzzle_2 = """
-...SIPS
-..HELLA
-.POLLEN
-GOLFBAG
-ALLIES.
-SKEET..
-PARS...
-"""
-
-puzzle_3 = """
-..PTA
-ISAAC
-TORCH
-TRITE
-YES..
-"""
-
-puzzle_4 = """
-PCS..
-ALPS.
-NERDS
-.FISH
-..GUY
-"""
-
-puzzle_5 = """
-..MAS..
-.SILKS.
-HELLYES
-ELK.DIE
-REDWINE
-.SUAVE.
-..DYE..
-"""
-
-examples = [
-    puzzle_1,
-    puzzle_2,
-    puzzle_3,
-    puzzle_4,
-    puzzle_5
-]
-random.shuffle(examples)
-
-def mini_demo_scene(stdscr):
-    try:
-        while True:
-            for i in range(len(examples)):
-                crossword = CrosswordGrid(
-                    parse_puzzle(examples[i]),
-                    null_charcter_fn=lambda c: (c, utils.Palette.gray())
-                )
-                controller = IndexController(crossword)
-                demo_steps = crossword.rows * crossword.cols * 2
-                crossword.update_display(stdscr, full_update=True)
-                for j in range(demo_steps):
-                    crossword.update_display(stdscr, full_update=True)
-                    stdscr.addstr(0, 0, f"Demo {i + 1}/{len(examples)}")
-                    stdscr.addstr(1, 0, f"Cell Cycle {j + 1}/{demo_steps}")
-                    stdscr.refresh()
-                    controller.cycle_cell(auto_skip=False)
-                    sleep(0.3)
-                demo_steps = (crossword.rows + crossword.cols) * 2
-                for j in range(demo_steps):
-                    crossword.update_display(stdscr, full_update=True)
-                    stdscr.addstr(0, 0, f"Example {i + 1}/{len(examples)}")
-                    stdscr.addstr(1, 0, f"Lane Cycle {j + 1}/{demo_steps}")
-                    stdscr.refresh()
-                    controller.cycle_lane(auto_skip=False)
-                    sleep(0.3)
-    except KeyboardInterrupt:
-        stdscr.clear()
-        stdscr.refresh()
-        return
+    controller.run(stdscr)
