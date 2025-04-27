@@ -155,8 +155,8 @@ class CrosswordController:
         new_coords = (self.puzzle.cursor_row + rows, self.puzzle.cursor_col + cols)
         if not self.puzzle.is_out_of_bounds(*new_coords):
             self.puzzle.cursor_row, self.puzzle.cursor_col = new_coords
-            # TODO: This isn't working. Cycle isn't updating when cursor moves with this method.
             self.puzzle.valid_cells.select(new_coords)
+            
     
     def move_cursor_up(self):
         self._move_cursor(-1, 0)
@@ -214,6 +214,7 @@ class CrosswordController:
         if not any([(i, j) != current_cell and condition(i, j) for i, j in self.puzzle.valid_cells]):
             return self.cycle_cell(
                 auto_skip=False,
+                reverse=reverse,
                 condition=lambda i, j: True
             )
         
@@ -233,7 +234,8 @@ class CrosswordController:
             next_lane_condition = lambda i, j: j != self.puzzle.cursor_col
         return self.cycle_cell(
             auto_skip,
-            next_lane_condition
+            reverse=False,
+            condition=next_lane_condition,
         )
 
     def run(self, stdscr):
