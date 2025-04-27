@@ -32,9 +32,20 @@ class Cycle(Iterable):
     
     def last(self):
         return self.data[-1]
-    
-    def remove(self, item):
+
+    def select(self, item):
         if item in self.data:
-            self.data.remove(item)
-            if self.data.index(item) > self.index:
-                self.index = self.index - 1
+            self.index = self.data.index(item)
+            return True
+        else:
+            return False
+
+
+def prev(cycle: Cycle):
+    return cycle.prev()
+
+def first(cycle: Cycle):
+    return cycle.first()
+
+def last(cycle: Cycle):
+    return cycle.last()

@@ -2,7 +2,7 @@ import utils
 import curses
 from time import sleep
 from typing import Iterable, Callable
-from mini.cycle import Cycle
+from mini.cycle import Cycle, prev, first, last
 
 # TODO: Add puzzle state (not solution)
 # TODO: Add cell input
@@ -155,6 +155,7 @@ class CrosswordController:
         new_coords = (self.puzzle.cursor_row + rows, self.puzzle.cursor_col + cols)
         if not self.puzzle.is_out_of_bounds(*new_coords):
             self.puzzle.cursor_row, self.puzzle.cursor_col = new_coords
+            self.puzzle.valid_cells.select(new_coords)
     
     def move_cursor_up(self):
         self._move_cursor(-1, 0)
@@ -168,11 +169,15 @@ class CrosswordController:
     def move_cursor_right(self):
         self._move_cursor(0, 1)
 
-    def cycle_cell(self, auto_skip: bool = True, condition: Callable[[int, int], bool] = lambda i, j: True):
+    def cycle_cell(self, auto_skip: bool = True, reverse = False, condition: Callable[[int, int], bool] = None):
         def get_next_cell():
-            next_cell = next(self.puzzle.valid_cells)
+            
+            next_cell_fn = prev if reverse else next
+            crossover_fn = last if reverse else first
 
-            if next_cell == self.puzzle.valid_cells.first():
+            next_cell = next_cell_fn(self.puzzle.valid_cells)
+
+            if next_cell == crossover_fn(self.puzzle.valid_cells):
                 # Reset cycle direction
                 if self.puzzle.cursor_h:
                     sort_key = lambda cell: (cell[1], cell[0])
@@ -189,7 +194,7 @@ class CrosswordController:
                 self.puzzle.cursor_h = not self.puzzle.cursor_h
                 
                 # Recalculate next cell
-                next_cell = next(self.puzzle.valid_cells)
+                next_cell = next_cell_fn(self.puzzle.valid_cells)
 
             if auto_skip:
                 if self.puzzle.is_empty(*next_cell):
@@ -199,6 +204,9 @@ class CrosswordController:
             else:
                 return next_cell
         
+        if condition is None:
+            condition = lambda i, j: (i, j) != (self.puzzle.cursor_row, self.puzzle.cursor_col)
+
         current_cell = (self.puzzle.cursor_row, self.puzzle.cursor_col)
         
         # Check there are cells to cycle through
@@ -233,8 +241,15 @@ class CrosswordController:
             while True:
                 key = stdscr.getch()
                 if key == curses.KEY_BACKSPACE or key == 127:
-                    # TODO: Implement cycle backwards
-                    pass
+                    new_coords = self.cycle_cell(
+                        auto_skip=False,
+                        reverse=True,
+                    )
+                    self.puzzle.set_cell(
+                        new_coords[0],
+                        new_coords[1],
+                        " "
+                    )
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     self.cycle_lane(auto_skip=True)
                 elif key == ord(" "):
