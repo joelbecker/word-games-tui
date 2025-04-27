@@ -32,3 +32,9 @@ class Cycle(Iterable):
     
     def last(self):
         return self.data[-1]
+    
+    def remove(self, item):
+        if item in self.data:
+            self.data.remove(item)
+            if self.data.index(item) > self.index:
+                self.index = self.index - 1

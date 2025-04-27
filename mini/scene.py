@@ -13,7 +13,8 @@ class Crossword:
 
     def __init__(self, cells: list[list[str]], null_charcter_fn: Callable[[chr], str] = None) -> None:
         # definition
-        self.cells = cells
+        self.solution = cells
+        self.cells = [[c if c is None else " " for c in row] for row in cells]
         self.rows = len(cells)
         self.cols = len(cells[0])
         
@@ -34,8 +35,18 @@ class Crossword:
         # options
         self.null_charcter_fn = null_charcter_fn
 
+    def set_cell(self, i: int, j: int, c: str):
+        if self.is_out_of_bounds(i, j):
+            return False
+        else:
+            self.cells[i][j] = str(c).upper()
+            return True
+
     def is_filled(self, i: int, j: int) -> bool:
-        return not self.is_out_of_bounds(i, j) and self.cells[i][j]
+        return not self.is_out_of_bounds(i, j) and self.cells[i][j].isalpha()
+
+    def is_empty(self, i: int, j: int) -> bool:
+        return not self.is_out_of_bounds(i, j) and not self.cells[i][j].isalpha()
 
     def is_cursor_cell(self, i: int, j: int) -> bool:
         return i == self.cursor_row and j == self.cursor_col
@@ -141,9 +152,9 @@ class CrosswordController:
         self.puzzle = puzzle
 
     def cycle_cell(self, auto_skip: bool = True, condition: Callable[[int, int], bool] = lambda i, j: True):
-        while True:
+        def get_next_cell():
             next_cell = next(self.puzzle.valid_cells)
-            
+
             if next_cell == self.puzzle.valid_cells.first():
                 # Reset cycle direction
                 if self.puzzle.cursor_h:
@@ -161,17 +172,31 @@ class CrosswordController:
                 self.puzzle.cursor_h = not self.puzzle.cursor_h
                 
                 # Recalculate next cell
-                next_cell = self.puzzle.valid_cells.next()
+                next_cell = next(self.puzzle.valid_cells)
 
-            if (not auto_skip or not self.puzzle.is_filled(*next_cell)) and condition(*next_cell):
+            if auto_skip:
+                if self.puzzle.is_empty(*next_cell):
+                    return next_cell
+                else:
+                    return get_next_cell()
+            else:
+                return next_cell
+        
+        current_cell = (self.puzzle.cursor_row, self.puzzle.cursor_col)
+        
+        # Check there are cells to cycle through
+        if not any([(i, j) != current_cell and condition(i, j) for i, j in self.puzzle.valid_cells]):
+            return self.cycle_cell(
+                auto_skip=False,
+                condition=lambda i, j: True
+            )
+        
+        while True:
+            next_cell = get_next_cell()
+
+            if condition(*next_cell):
                 self.puzzle.cursor_row, self.puzzle.cursor_col = next_cell
                 return next_cell
-            elif auto_skip and next_cell == (self.puzzle.cursor_row, self.puzzle.cursor_col):
-                # If we have cycle through all the cells on auto_skip and none are empty
-                return self.cycle_cell(
-                    auto_skip=False,
-                    condition=condition
-                )
             else:
                 continue
 
@@ -194,11 +219,15 @@ class CrosswordController:
                     # TODO: Implement cycle backwards
                     pass
                 elif key == curses.KEY_ENTER or key in [10, 13]:
-                    self.cycle_lane(auto_skip=False)
+                    self.cycle_lane(auto_skip=True)
                 elif key == ord(" "):
-                    self.cycle_cell(auto_skip=False)
+                    self.cycle_cell(auto_skip=True)
                 elif curses.ascii.isalpha(key):
-                    self.puzzle.cells[self.puzzle.cursor_row][self.puzzle.cursor_col] = str(chr(key)).upper()
+                    self.puzzle.set_cell(
+                        self.puzzle.cursor_row,
+                        self.puzzle.cursor_col,
+                        chr(key)
+                    )
                     self.cycle_cell(auto_skip=False)
                 else:
                     continue
