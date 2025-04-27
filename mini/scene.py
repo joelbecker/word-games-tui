@@ -160,15 +160,39 @@ class CrosswordController:
     
     def move_cursor_up(self):
         self._move_cursor(-1, 0)
+        if self.puzzle.cursor_h:
+            self.toggle_cursor_direction()
     
     def move_cursor_down(self):
         self._move_cursor(1, 0)
+        if self.puzzle.cursor_h:
+            self.toggle_cursor_direction()
     
     def move_cursor_left(self):
         self._move_cursor(0, -1)
+        if not self.puzzle.cursor_h:
+            self.toggle_cursor_direction()
 
     def move_cursor_right(self):
         self._move_cursor(0, 1)
+        if not self.puzzle.cursor_h:
+            self.toggle_cursor_direction()
+
+    def toggle_cursor_direction(self):
+        # Reset cycle direction
+        if self.puzzle.cursor_h:
+            sort_key = lambda cell: (cell[1], cell[0])
+        else:
+            sort_key = lambda cell: (cell[0], cell[1])
+        self.puzzle.valid_cells = Cycle(
+            sorted(
+                self.puzzle.valid_cells,
+                key=sort_key
+            )
+        )
+        
+        # Toggle direction
+        self.puzzle.cursor_h = not self.puzzle.cursor_h
 
     def cycle_cell(self, auto_skip: bool = True, reverse = False, condition: Callable[[int, int], bool] = None):
         def get_next_cell():
@@ -179,21 +203,9 @@ class CrosswordController:
             next_cell = next_cell_fn(self.puzzle.valid_cells)
 
             if next_cell == crossover_fn(self.puzzle.valid_cells):
-                # Reset cycle direction
-                if self.puzzle.cursor_h:
-                    sort_key = lambda cell: (cell[1], cell[0])
-                else:
-                    sort_key = lambda cell: (cell[0], cell[1])
-                self.puzzle.valid_cells = Cycle(
-                    sorted(
-                        self.puzzle.valid_cells,
-                        key=sort_key
-                    )
-                )
                 
-                # Toggle direction
-                self.puzzle.cursor_h = not self.puzzle.cursor_h
-                
+                self.toggle_cursor_direction()
+
                 # Recalculate next cell
                 next_cell = next_cell_fn(self.puzzle.valid_cells)
 
