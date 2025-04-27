@@ -151,6 +151,23 @@ class CrosswordController:
     def __init__(self, puzzle: Crossword):
         self.puzzle = puzzle
 
+    def _move_cursor(self, rows, cols):
+        new_coords = (self.puzzle.cursor_row + rows, self.puzzle.cursor_col + cols)
+        if not self.puzzle.is_out_of_bounds(*new_coords):
+            self.puzzle.cursor_row, self.puzzle.cursor_col = new_coords
+    
+    def move_cursor_up(self):
+        self._move_cursor(-1, 0)
+    
+    def move_cursor_down(self):
+        self._move_cursor(1, 0)
+    
+    def move_cursor_left(self):
+        self._move_cursor(0, -1)
+
+    def move_cursor_right(self):
+        self._move_cursor(0, 1)
+
     def cycle_cell(self, auto_skip: bool = True, condition: Callable[[int, int], bool] = lambda i, j: True):
         def get_next_cell():
             next_cell = next(self.puzzle.valid_cells)
@@ -229,6 +246,14 @@ class CrosswordController:
                         chr(key)
                     )
                     self.cycle_cell(auto_skip=False)
+                elif key == curses.KEY_UP:
+                    self.move_cursor_up()
+                elif key == curses.KEY_DOWN:
+                    self.move_cursor_down()
+                elif key == curses.KEY_LEFT:
+                    self.move_cursor_left()
+                elif key == curses.KEY_RIGHT:
+                    self.move_cursor_right()
                 else:
                     continue
                 self.puzzle.update_display(stdscr, full_update=True)
