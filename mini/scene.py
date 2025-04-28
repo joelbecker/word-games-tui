@@ -119,23 +119,40 @@ class Crossword:
             return self._color_character(i, j, " ", rel_coords)
 
     def update_display(self, stdscr, full_update: bool = False):
-        width = self.cols * 4 + 1
-        height = self.rows * 2 + 1
-        hbuffer = utils.horizontal_buffer(width, utils.display_cols(stdscr))
-        vbuffer = utils.vertical_buffer(height, utils.display_rows(stdscr))
+        def row_to_y(col: int) -> tuple[int, int]:
+            return col * 2, (col + 1) * 2 + 1
+        
+        def col_to_x(row: int) -> tuple[int, int]:
+            return row * 4, (row + 1) * 4 + 1
+        
+        y_start = 0
+        x_start = 0
+        y_end = row_to_y(self.rows - 1)[1]
+        x_end = col_to_x(self.cols - 1)[1]
+        hbuffer = utils.horizontal_buffer(x_end, utils.display_cols(stdscr))
+        vbuffer = utils.vertical_buffer(y_end, utils.display_rows(stdscr))
 
         if full_update:
             stdscr.clear()
-        
-        y_start = 0 if full_update else max(self.cursor_row * 2 - 2, 0)
-        x_start = 0 if full_update else max(self.cursor_col * 4 - 4, 0)
-        y_end = height if full_update else min(y_start + 9, height)
-        x_end = width if full_update else min(x_start + 13, width)
 
         for y in range(y_start, y_end):
             i = y // 2
             is_hline = y % 2 == 0
             for x in range(x_start, x_end):
+                if not full_update:
+                    cursor_row_ys = row_to_y(self.cursor_row)
+                    prev_cursor_row_ys = row_to_y(self.prev_cursor_row)
+                    cursor_col_xs = col_to_x(self.cursor_col)
+                    prev_cursor_col_xs = col_to_x(self.prev_cursor_col)
+                    is_in_update_area = (
+                        cursor_row_ys[0] <= y < cursor_row_ys[1]
+                        or prev_cursor_row_ys[0] <= y < prev_cursor_row_ys[1]
+                        or cursor_col_xs[0] <= x < cursor_col_xs[1]
+                        or prev_cursor_col_xs[0] <= x < prev_cursor_col_xs[1]
+                    )
+                    if not is_in_update_area:
+                        continue
+                    
                 j = x // 4
                 is_vline = x % 4 == 0
                 is_center = x % 4 == 2 and y % 2 == 1
@@ -292,11 +309,8 @@ class CrosswordController:
                 else:
                     continue
 
-                do_full_update = self.puzzle.cursor_h != self.puzzle.prev_cursor_h or (
-                    self.puzzle.cursor_row != self.puzzle.prev_cursor_row
-                    and self.puzzle.cursor_col != self.puzzle.prev_cursor_col
-                )
-                self.puzzle.update_display(stdscr, full_update=do_full_update)
+                self.puzzle.update_display(stdscr, full_update=False)
+                
         except KeyboardInterrupt:
             stdscr.clear()
             stdscr.refresh()
