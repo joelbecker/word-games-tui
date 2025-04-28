@@ -221,20 +221,17 @@ class CrosswordController:
         # Toggle direction
         self.puzzle.cursor_h = not self.puzzle.cursor_h
 
-    def cycle_cell(self, auto_skip: bool = True, reverse = False, condition: Callable[[int, int], bool] = None):
+    def cycle_cell(self, auto_skip: bool = True, stop_at_end: bool = False, condition: Callable[[int, int], bool] = None):
         def get_next_cell():
             
-            next_cell_fn = prev if reverse else next
-            crossover_fn = last if reverse else first
+            next_cell = next(self.puzzle.valid_cells)
 
-            next_cell = next_cell_fn(self.puzzle.valid_cells)
-
-            if next_cell == crossover_fn(self.puzzle.valid_cells):
+            if next_cell == first(self.puzzle.valid_cells):
                 
                 self.toggle_cursor_direction()
 
                 # Recalculate next cell
-                next_cell = next_cell_fn(self.puzzle.valid_cells)
+                next_cell = next(self.puzzle.valid_cells)
 
             if auto_skip:
                 if self.puzzle.is_empty(*next_cell):
@@ -249,11 +246,20 @@ class CrosswordController:
 
         current_cell = (self.puzzle.cursor_row, self.puzzle.cursor_col)
         
+        if stop_at_end:
+            # Do nothing if cursor is at the end of the lane
+            if self.puzzle.cursor_h and self.puzzle.is_out_of_bounds(self.puzzle.cursor_row, self.puzzle.cursor_col + 1):
+                return current_cell
+            elif not self.puzzle.cursor_h and self.puzzle.is_out_of_bounds(self.puzzle.cursor_row + 1, self.puzzle.cursor_col):
+                return current_cell
+
+        
         # Check there are cells to cycle through
-        if not any([(i, j) != current_cell and condition(i, j) for i, j in self.puzzle.valid_cells]):
+        no_valid_cells = not any([(i, j) != current_cell and condition(i, j) for i, j in self.puzzle.valid_cells])
+        no_empty_cells = not any([self.puzzle.is_empty(i, j) for i, j in self.puzzle.valid_cells])
+        if auto_skip and (no_valid_cells or no_empty_cells):
             return self.cycle_cell(
                 auto_skip=False,
-                reverse=reverse,
                 condition=lambda i, j: True
             )
         
@@ -273,7 +279,6 @@ class CrosswordController:
             next_lane_condition = lambda i, j: j != self.puzzle.cursor_col
         return self.cycle_cell(
             auto_skip,
-            reverse=False,
             condition=next_lane_condition,
         )
 
@@ -322,7 +327,7 @@ class CrosswordController:
                             self.puzzle.cursor_col,
                             chr(key)
                         )
-                        self.cycle_cell(auto_skip=False)
+                        self.cycle_cell(auto_skip=False, stop_at_end=True)
                     elif key == curses.KEY_UP:
                         self.move_cursor_up()
                     elif key == curses.KEY_DOWN:
