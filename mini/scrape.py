@@ -51,7 +51,3 @@ def get_mini_puzzle():
             clues.append(clue)
 
     return grid, clues
-
-grid, clues = get_mini_puzzle()
-print(grid)
-print(clues)
