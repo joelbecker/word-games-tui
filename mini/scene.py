@@ -180,27 +180,29 @@ class CrosswordController:
         if not self.puzzle.is_out_of_bounds(*new_coords):
             self.puzzle.cursor_row, self.puzzle.cursor_col = new_coords
             self.puzzle.valid_cells.select(new_coords)
-            
+            return True
+        else:
+            return False
     
     def move_cursor_up(self):
-        self._move_cursor(-1, 0)
         if self.puzzle.cursor_h:
             self.toggle_cursor_direction()
+        return self._move_cursor(-1, 0)
     
     def move_cursor_down(self):
-        self._move_cursor(1, 0)
         if self.puzzle.cursor_h:
             self.toggle_cursor_direction()
+        return self._move_cursor(1, 0)
     
     def move_cursor_left(self):
-        self._move_cursor(0, -1)
         if not self.puzzle.cursor_h:
             self.toggle_cursor_direction()
+        return self._move_cursor(0, -1)
 
     def move_cursor_right(self):
-        self._move_cursor(0, 1)
         if not self.puzzle.cursor_h:
             self.toggle_cursor_direction()
+        return self._move_cursor(0, 1)
 
     def toggle_cursor_direction(self):
         # Reset cycle direction
@@ -208,6 +210,7 @@ class CrosswordController:
             sort_key = lambda cell: (cell[1], cell[0])
         else:
             sort_key = lambda cell: (cell[0], cell[1])
+        
         self.puzzle.valid_cells = Cycle(
             sorted(
                 self.puzzle.valid_cells,
@@ -292,15 +295,23 @@ class CrosswordController:
                     self.puzzle.prev_cursor_h = self.puzzle.cursor_h
 
                     if key == curses.KEY_BACKSPACE or key == 127:
-                        new_coords = self.cycle_cell(
-                            auto_skip=False,
-                            reverse=True,
-                        )
-                        self.puzzle.set_cell(
-                            new_coords[0],
-                            new_coords[1],
-                            " "
-                        )
+                        if not self.puzzle.is_empty(self.puzzle.cursor_row, self.puzzle.cursor_col):
+                            self.puzzle.set_cell(
+                                self.puzzle.cursor_row,
+                                self.puzzle.cursor_col,
+                                " "
+                            )
+                        else:
+                            if self.puzzle.cursor_h:
+                                move_result = self.move_cursor_left()
+                            else:
+                                move_result = self.move_cursor_up()
+                            if move_result:
+                                self.puzzle.set_cell(
+                                    self.puzzle.cursor_row,
+                                    self.puzzle.cursor_col,
+                                    " "
+                                )
                     elif key == curses.KEY_ENTER or key in [10, 13]:
                         self.cycle_lane(auto_skip=True)
                     elif key == ord(" "):
