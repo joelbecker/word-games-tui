@@ -118,7 +118,7 @@ class Crossword:
             rel_coords = [(0, 0)]
             return self._color_character(i, j, " ", rel_coords)
 
-    def update_display(self, stdscr, full_update: bool = False):
+    def update_display(self, stdscr, timer_seconds: int = 0, full_update: bool = False):
         def row_to_y(col: int) -> tuple[int, int]:
             return col * 2, (col + 1) * 2 + 1
         
@@ -134,6 +134,10 @@ class Crossword:
 
         if full_update:
             stdscr.clear()
+
+        minutes, seconds = divmod(timer_seconds, 60)
+        timer_display = f"{int(minutes):02}:{int(seconds):02}"
+        stdscr.addstr(1, (utils.display_cols(stdscr) - 5)//2, timer_display)
 
         for y in range(y_start, y_end):
             i = y // 2
@@ -169,6 +173,7 @@ class CrosswordController:
 
     def __init__(self, puzzle: Crossword):
         self.puzzle = puzzle
+        self.start_time = time.time()
 
     def _move_cursor(self, rows, cols):
         new_coords = (self.puzzle.cursor_row + rows, self.puzzle.cursor_col + cols)
@@ -270,46 +275,61 @@ class CrosswordController:
         )
 
     def run(self, stdscr):
+        stdscr.nodelay(True)  # Enable non-blocking input
         self.puzzle.update_display(stdscr, full_update=True)
+        last_update_time = time.time()
+
         try:
             while True:
-                key = stdscr.getch()
-                self.puzzle.prev_cursor_row = self.puzzle.cursor_row
-                self.puzzle.prev_cursor_col = self.puzzle.cursor_col
-                self.puzzle.prev_cursor_h = self.puzzle.cursor_h
-                if key == curses.KEY_BACKSPACE or key == 127:
-                    new_coords = self.cycle_cell(
-                        auto_skip=False,
-                        reverse=True,
-                    )
-                    self.puzzle.set_cell(
-                        new_coords[0],
-                        new_coords[1],
-                        " "
-                    )
-                elif key == curses.KEY_ENTER or key in [10, 13]:
-                    self.cycle_lane(auto_skip=True)
-                elif key == ord(" "):
-                    self.cycle_cell(auto_skip=True)
-                elif curses.ascii.isalpha(key):
-                    self.puzzle.set_cell(
-                        self.puzzle.cursor_row,
-                        self.puzzle.cursor_col,
-                        chr(key)
-                    )
-                    self.cycle_cell(auto_skip=False)
-                elif key == curses.KEY_UP:
-                    self.move_cursor_up()
-                elif key == curses.KEY_DOWN:
-                    self.move_cursor_down()
-                elif key == curses.KEY_LEFT:
-                    self.move_cursor_left()
-                elif key == curses.KEY_RIGHT:
-                    self.move_cursor_right()
-                else:
-                    continue
+                current_time = time.time()
+                timer_seconds = current_time - self.start_time
 
-                self.puzzle.update_display(stdscr, full_update=False)
+                # Check for input
+                key = stdscr.getch()
+                if key != -1:  # Input detected
+                    self.puzzle.prev_cursor_row = self.puzzle.cursor_row
+                    self.puzzle.prev_cursor_col = self.puzzle.cursor_col
+                    self.puzzle.prev_cursor_h = self.puzzle.cursor_h
+
+                    if key == curses.KEY_BACKSPACE or key == 127:
+                        new_coords = self.cycle_cell(
+                            auto_skip=False,
+                            reverse=True,
+                        )
+                        self.puzzle.set_cell(
+                            new_coords[0],
+                            new_coords[1],
+                            " "
+                        )
+                    elif key == curses.KEY_ENTER or key in [10, 13]:
+                        self.cycle_lane(auto_skip=True)
+                    elif key == ord(" "):
+                        self.cycle_cell(auto_skip=True)
+                    elif curses.ascii.isalpha(key):
+                        self.puzzle.set_cell(
+                            self.puzzle.cursor_row,
+                            self.puzzle.cursor_col,
+                            chr(key)
+                        )
+                        self.cycle_cell(auto_skip=False)
+                    elif key == curses.KEY_UP:
+                        self.move_cursor_up()
+                    elif key == curses.KEY_DOWN:
+                        self.move_cursor_down()
+                    elif key == curses.KEY_LEFT:
+                        self.move_cursor_left()
+                    elif key == curses.KEY_RIGHT:
+                        self.move_cursor_right()
+                    else:
+                        continue
+
+                    # Update display after handling input
+                    self.puzzle.update_display(stdscr, timer_seconds=timer_seconds, full_update=False)
+
+                # Update display at least once per second
+                if current_time - last_update_time >= 1:
+                    self.puzzle.update_display(stdscr, timer_seconds=timer_seconds, full_update=False)
+                    last_update_time = current_time
 
         except KeyboardInterrupt:
             stdscr.clear()
