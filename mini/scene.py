@@ -31,7 +31,10 @@ class Crossword:
             ])
         )
         self.cursor_row, self.cursor_col = next(self.valid_cells)
-        
+        self.prev_cursor_row = self.cursor_row
+        self.prev_cursor_col = self.cursor_col
+        self.prev_cursor_h = self.cursor_h
+
         # options
         self.null_charcter_fn = null_charcter_fn
 
@@ -124,11 +127,10 @@ class Crossword:
         if full_update:
             stdscr.clear()
         
-        # TODO: These partial updates are very broken. TBD whether it's needed for performance.
-        y_start = 0 if full_update else self.cursor_row * 2 - 2
-        x_start = 0 if full_update else self.cursor_col * 4 - 4
-        y_end = height if full_update else y_start + 4
-        x_end = width if full_update else x_start + 8
+        y_start = 0 if full_update else max(self.cursor_row * 2 - 2, 0)
+        x_start = 0 if full_update else max(self.cursor_col * 4 - 4, 0)
+        y_end = height if full_update else min(y_start + 9, height)
+        x_end = width if full_update else min(x_start + 13, width)
 
         for y in range(y_start, y_end):
             i = y // 2
@@ -255,6 +257,9 @@ class CrosswordController:
         try:
             while True:
                 key = stdscr.getch()
+                self.puzzle.prev_cursor_row = self.puzzle.cursor_row
+                self.puzzle.prev_cursor_col = self.puzzle.cursor_col
+                self.puzzle.prev_cursor_h = self.puzzle.cursor_h
                 if key == curses.KEY_BACKSPACE or key == 127:
                     new_coords = self.cycle_cell(
                         auto_skip=False,
@@ -286,7 +291,12 @@ class CrosswordController:
                     self.move_cursor_right()
                 else:
                     continue
-                self.puzzle.update_display(stdscr, full_update=True)
+
+                do_full_update = self.puzzle.cursor_h != self.puzzle.prev_cursor_h or (
+                    self.puzzle.cursor_row != self.puzzle.prev_cursor_row
+                    and self.puzzle.cursor_col != self.puzzle.prev_cursor_col
+                )
+                self.puzzle.update_display(stdscr, full_update=do_full_update)
         except KeyboardInterrupt:
             stdscr.clear()
             stdscr.refresh()
