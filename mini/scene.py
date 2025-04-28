@@ -1,11 +1,11 @@
-import utils
+import time
 import curses
 from time import sleep
 from typing import Iterable, Callable
+
+import utils
 from mini.cycle import Cycle, prev, first, last
 
-# TODO: Add puzzle state (not solution)
-# TODO: Add cell input
 # TODO: Add cell->word mappings
 # TODO: Add clue display
 
@@ -310,7 +310,7 @@ class CrosswordController:
                     continue
 
                 self.puzzle.update_display(stdscr, full_update=False)
-                
+
         except KeyboardInterrupt:
             stdscr.clear()
             stdscr.refresh()
