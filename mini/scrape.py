@@ -1,5 +1,9 @@
+import os
+import json
 import time
 from utils import scrape_with_selenium
+
+MINI_PUZZLE_FILENAME = os.path.expanduser("~/.wordgames/mini.json")
 
 def reveal_mini_solution(driver):
     continue_button = driver.find_element("xpath", '/html/body/div[5]/div/div/button')
@@ -44,6 +48,11 @@ def get_mini_puzzle():
 
     soup = bs4.BeautifulSoup(html, "html.parser")
 
+    raw_date = soup.find("div", attrs={"class": "xwd__details--date"}).contents[0].strip().split(", ")[1]
+    current_year = time.strftime("%Y")
+    raw_date_with_year = f"{raw_date}, {current_year}"
+    date = time.strftime("%Y-%m-%d", time.strptime(raw_date_with_year, "%B %d, %Y"))
+    
     g_elements = soup.find_all("g", attrs={"class": "xwd__cell"})
 
     def parse_cell(g):
@@ -89,4 +98,14 @@ def get_mini_puzzle():
             }
             clues.append(clue)
 
-    return grid, clues
+    return date, grid, clues
+
+if __name__ == "__main__":
+    date, grid, clues = get_mini_puzzle()
+    json_data = {
+        "date": date,
+        "grid": grid,
+        "clues": clues,
+    }
+    with open(MINI_PUZZLE_FILENAME, "w") as f:
+        json.dump(json_data, f, indent=4)
