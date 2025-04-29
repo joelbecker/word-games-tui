@@ -57,6 +57,7 @@ def get_mini_puzzle():
             "y": float(g.rect.get("y")),
             "number": number,
             "letter": letter,
+            "has_circle": bool(g.circle) or (g.path and g.path.attrs['data-testid'] == "cell-path") or False,
         }
 
     cells = [parse_cell(g) for g in g_elements]
@@ -72,7 +73,7 @@ def get_mini_puzzle():
         if "xwd__cell--block" in cell["class"]:
             grid[row][col] = None
         else:
-            grid[row][col] = (cell["number"], cell["letter"])
+            grid[row][col] = {"letter": cell["letter"], "number": cell["number"], "has_circle": cell["has_circle"]}
 
     clue_lists = soup.find_all("div", attrs={"class": "xwd__clue-list--wrapper"})
     clues = soup.find_all("li", attrs={"class": "xwd__clue--li"})
