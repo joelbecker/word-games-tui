@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import time
 import curses
 from time import sleep
@@ -8,6 +9,27 @@ from mini.cycle import Cycle
 
 # TODO: Add cell->word mappings
 # TODO: Add clue display
+
+@dataclass
+class CrosswordCell:
+    i: int
+    j: int
+    solution: str
+    number: str
+    is_circled: bool = False
+    value: str = " "
+    is_filled: bool = False
+    is_out_of_bounds: bool = False
+
+    def set_value(self, value: str):
+        assert len(value) == 1, "Value must be a single character"
+        assert value.isalpha() or value == " ", "Value must be an alphabetic character or a space"
+        if value == " ":
+            self.is_filled = False
+        else:
+            self.is_filled = True
+        self.value = value
+    
 
 class Crossword:
 

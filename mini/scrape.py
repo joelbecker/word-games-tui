@@ -82,7 +82,13 @@ def get_mini_puzzle():
         if "xwd__cell--block" in cell["class"]:
             grid[row][col] = None
         else:
-            grid[row][col] = {"letter": cell["letter"], "number": cell["number"], "has_circle": cell["has_circle"]}
+            grid[row][col] = {
+                "solution": cell["letter"],
+                "number": cell["number"],
+                "is_circled": cell["has_circle"],
+                "i": row,
+                "j": col,
+            }
 
     clue_lists = soup.find_all("div", attrs={"class": "xwd__clue-list--wrapper"})
     clues = soup.find_all("li", attrs={"class": "xwd__clue--li"})
