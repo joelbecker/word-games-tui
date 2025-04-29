@@ -71,16 +71,23 @@ def get_mini_puzzle():
 
     cells = [parse_cell(g) for g in g_elements]
 
-    rows = sorted(list(set(c["x"] for c in cells)))
-    cols = sorted(list(set(c["y"] for c in cells)))
+    cols = sorted(list(set(c["x"] for c in cells)))
+    rows = sorted(list(set(c["y"] for c in cells)))
     grid = [[None for _ in cols] for _ in rows]
 
     for cell in cells:
-        row = rows.index(cell["x"])
-        col = cols.index(cell["y"])
+        row = rows.index(cell["y"])
+        col = cols.index(cell["x"])
 
         if "xwd__cell--block" in cell["class"]:
-            grid[row][col] = None
+            grid[row][col] = {
+                "solution": None,
+                "number": None,
+                "is_circled": False,
+                "i": row,
+                "j": col,
+                "is_out_of_bounds": True,
+            }
         else:
             grid[row][col] = {
                 "solution": cell["letter"],
@@ -106,7 +113,7 @@ def get_mini_puzzle():
 
     return date, grid, clues
 
-if __name__ == "__main__":
+def write_mini_puzzle_data():
     date, grid, clues = get_mini_puzzle()
     json_data = {
         "date": date,

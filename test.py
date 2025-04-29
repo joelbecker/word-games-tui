@@ -26,6 +26,7 @@ def test_connections():
 def test_mini():
     from mini import scrape
     date, grid, clues = scrape.get_mini_puzzle()
+    scrape.write_mini_puzzle_data()
     print(grid)
     print(clues)
     

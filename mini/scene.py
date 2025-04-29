@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 import time
 import curses
 from time import sleep
@@ -15,11 +16,14 @@ class CrosswordCell:
     i: int
     j: int
     solution: str
-    number: str
+    number: str = " "
     is_circled: bool = False
     value: str = " "
     is_filled: bool = False
     is_out_of_bounds: bool = False
+
+    def __post_init__(self):
+        assert self.value is not None
 
     def set_value(self, value: str):
         assert len(value) == 1, "Value must be a single character"
@@ -32,11 +36,9 @@ class CrosswordCell:
     
 
 class Crossword:
-
-    def __init__(self, cells: list[list[str]], null_charcter_fn: Callable[[chr], str] = None) -> None:
+    def __init__(self, cells: list[list[CrosswordCell]]) -> None:
         # definition
-        self.solution = cells
-        self.cells = [[c if c is None else " " for c in row] for row in cells]
+        self.cells = cells
         self.rows = len(cells)
         self.cols = len(cells[0])
         
@@ -49,7 +51,7 @@ class Crossword:
             sorted([
                 (i, j) for i in range(self.rows)
                 for j in range(self.cols)
-                if cells[i][j] is not None
+                if not cells[i][j].is_out_of_bounds
             ])
         )
         self.cursor_row, self.cursor_col = next(self.valid_cells)
@@ -57,21 +59,18 @@ class Crossword:
         self.prev_cursor_col = self.cursor_col
         self.prev_cursor_h = self.cursor_h
 
-        # options
-        self.null_charcter_fn = null_charcter_fn
-
     def set_cell(self, i: int, j: int, c: str):
         if self.is_out_of_bounds(i, j):
             return False
         else:
-            self.cells[i][j] = str(c).upper()
+            self.cells[i][j].set_value(c.upper())
             return True
 
     def is_filled(self, i: int, j: int) -> bool:
-        return not self.is_out_of_bounds(i, j) and self.cells[i][j].isalpha()
+        return not self.is_out_of_bounds(i, j) and self.cells[i][j].is_filled
 
     def is_empty(self, i: int, j: int) -> bool:
-        return not self.is_out_of_bounds(i, j) and not self.cells[i][j].isalpha()
+        return not self.is_out_of_bounds(i, j) and not self.cells[i][j].is_filled
 
     def is_cursor_cell(self, i: int, j: int) -> bool:
         return i == self.cursor_row and j == self.cursor_col
@@ -81,14 +80,15 @@ class Crossword:
         return (
             i >= 0 and j >= 0 and i < self.rows and j < self.cols
         ) and (
-            self.cells[i][j] is not None
+            not self.cells[i][j].is_out_of_bounds
         ) and (
             (self.cursor_h and i == self.cursor_row)
             or (not self.cursor_h and j == self.cursor_col)
         )
 
     def is_out_of_bounds(self, i: int, j: int) -> bool:
-        return i < 0 or j < 0 or i >= self.rows or j >= self.cols or self.cells[i][j] is None
+        return (i < 0 or j < 0 or i >= self.rows or j >= self.cols 
+                or self.cells[i][j].is_out_of_bounds)
 
     def _check_coordinates(self, coords: list[tuple[int, int]], f: Callable[[int, int], bool], b: Callable[[Iterable[bool]], bool]):
         return b(f(i, j) for i, j in coords)
@@ -103,16 +103,16 @@ class Crossword:
         return self._check_coordinates(coords, self.is_out_of_bounds, b)
 
     def _color_character(self, i: int, j: int, c: str, rel_coords: list[tuple[int, int]]) -> tuple[chr, int]:
+        _c = c
         coords = [(i + di, j + dj) for di, dj in rel_coords]
         is_white = c.isalpha() or self.check_out_of_bounds(coords)
         is_yellow = self.check_cursor_cells(coords)
         is_blue = self.check_cursor_lanes(coords)
-        is_null = self.check_out_of_bounds(coords, all)
+        is_out_of_bounds = self.check_out_of_bounds(coords, all)
         
-        if is_null and self.null_charcter_fn:
-            return self.null_charcter_fn(c)
-        
-        if is_yellow:
+        if is_out_of_bounds:
+            color = utils.Palette.gray()
+        elif is_yellow:
             color = utils.Palette.yellow()
         elif is_blue:
             color = utils.Palette.blue()
@@ -121,12 +121,18 @@ class Crossword:
         else:
             color = utils.Palette.gray()
 
-        return c, color
+        return _c, color
 
-    def _character(self, i: int, j: int, is_hline: bool, is_vline: bool, is_center: bool) -> tuple[chr, int]:
+    def _character(self, i: int, j: int, is_hline: bool, is_vline: bool, is_center: bool, is_center_left: bool, is_center_right: bool) -> tuple[chr, int]:
         if is_center:
-            value = self.cells[i][j] or " "
-            return self._color_character(i, j, value, [(0, 0)])
+            cell = self.cells[i][j]
+            return self._color_character(i, j, cell.value if cell.is_filled else cell.number or " ", [(0, 0)])
+        elif is_center_left:
+            cell = self.cells[i][j]
+            return self._color_character(i, j, "(" if cell.is_circled else " ", [(0, 0)])
+        elif is_center_right:
+            cell = self.cells[i][j]
+            return self._color_character(i, j, ")" if cell.is_circled else " ", [(0, 0)])
         elif is_hline and is_vline:
             rel_coords = [(0, 0), (0, -1), (-1, 0), (-1, -1)]
             return self._color_character(i, j, "+", rel_coords)
@@ -182,8 +188,10 @@ class Crossword:
                 j = x // 4
                 is_vline = x % 4 == 0
                 is_center = x % 4 == 2 and y % 2 == 1
+                is_center_left = x % 4 == 1 and y % 2 == 1
+                is_center_right = x % 4 == 3 and y % 2 == 1
                 try:
-                    c, color = self._character(i, j, is_hline, is_vline, is_center)
+                    c, color = self._character(i, j, is_hline, is_vline, is_center, is_center_left, is_center_right)
                     stdscr.addstr(y + vbuffer, x + hbuffer, c, color)
                 except Exception as e:
                     stdscr.addstr(y + vbuffer, x + hbuffer, "#")
@@ -376,9 +384,11 @@ class CrosswordController:
         
 def mini_scene(stdscr):
     stdscr.clear()
-
-    from mini.example_puzzles import puzzle_1, parse_puzzle
-    puzzle = parse_puzzle(puzzle_1)
+    from mini.scrape import MINI_PUZZLE_FILENAME, write_mini_puzzle_data
+    write_mini_puzzle_data() # temp
+    with open(MINI_PUZZLE_FILENAME, "r") as f:
+        data = json.load(f)
+    puzzle = [[CrosswordCell(**d) for d in row] for row in data["grid"]]
     crossword = Crossword(puzzle)
     controller = CrosswordController(crossword)
 
