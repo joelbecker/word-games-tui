@@ -55,10 +55,10 @@ def get_connections_puzzle(url):
     word_list = word_lists[0].find_all('li')
 
     category_names = {
-        'yellow': word_list[0].p.strong.text,
-        'green': word_list[1].p.strong.text,
-        'blue': word_list[2].p.strong.text,
-        'purple': word_list[3].p.strong.text.strip(":")
+        'yellow': word_list[0].p.strong.text.replace(":", ""),
+        'green': word_list[1].p.strong.text.replace(":", ""),
+        'blue': word_list[2].p.strong.text.replace(":", ""),
+        'purple': word_list[3].p.strong.text.replace(":", "")
     }
 
     category_words = {
