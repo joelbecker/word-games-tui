@@ -4,7 +4,7 @@ from time import sleep
 from typing import Iterable, Callable
 
 import utils
-from mini.cycle import Cycle, prev, first, last
+from mini.cycle import Cycle
 
 # TODO: Add cell->word mappings
 # TODO: Add clue display
@@ -226,7 +226,7 @@ class CrosswordController:
             
             next_cell = next(self.puzzle.valid_cells)
 
-            if next_cell == first(self.puzzle.valid_cells):
+            if next_cell == self.puzzle.valid_cells.first():
                 
                 self.toggle_cursor_direction()
 

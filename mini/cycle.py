@@ -39,13 +39,3 @@ class Cycle(Iterable):
             return True
         else:
             return False
-
-
-def prev(cycle: Cycle):
-    return cycle.prev()
-
-def first(cycle: Cycle):
-    return cycle.first()
-
-def last(cycle: Cycle):
-    return cycle.last()
