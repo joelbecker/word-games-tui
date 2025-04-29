@@ -5,7 +5,7 @@ import curses
 WIDTH = 50
 
 
-def scrape_with_selenium(url):
+def scrape_with_selenium(url, driver_actions=None):
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
     
@@ -14,6 +14,8 @@ def scrape_with_selenium(url):
     chrome_options.add_argument('--no-sandbox')
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(url)
+    if driver_actions:
+        driver_actions(driver)
     html = driver.page_source
     driver.quit()
     return html

@@ -1,25 +1,64 @@
+import time
+import selenium
+import os
 from utils import scrape_with_selenium
+
+def reveal_mini_solution(driver):
+    continue_button = driver.find_element("xpath", '/html/body/div[5]/div/div/button')
+    continue_button.click()
+    time.sleep(1)
+
+    overlay = driver.find_element("xpath", '//*[@id="portal-game-modals"]/div/div/div[2]/article/button')
+    overlay.click()
+    time.sleep(1) 
+    
+    reveal_button = driver.find_element("xpath", '//*[@id="portal-game-toolbar"]/div/ul/div[2]/li[2]/button')
+    reveal_button.click()
+    time.sleep(1)
+    
+    puzzle_button = driver.find_element("xpath", '//*[@id="portal-game-toolbar"]/div/ul/div[2]/li[2]/ul/li[3]/button')
+    puzzle_button.click()
+    time.sleep(1)
+
+    confirm_button = driver.find_element("xpath", '//*[@id="portal-game-modals"]/div/div/div[2]/article/div/button[2]')
+    confirm_button.click()
+
 
 def get_mini_puzzle():
     import bs4
 
     url = "https://www.nytimes.com/crosswords/game/mini"
-    # html = scrape_with_selenium(url)
 
-    # temporary to avoid rate limiting
-    with open("mini.html", "r") as f:
-        html = f.read()
+    use_cached = True
+
+    if use_cached:
+        # temporary to avoid rate limiting
+        with open("mini.html", "r") as f:
+            # f.write(html)
+            html = f.read()
+    else:
+        html = scrape_with_selenium(
+            url,
+            driver_actions=reveal_mini_solution,
+        )
+        with open("mini.html", "w") as f:
+            f.write(html)
 
     soup = bs4.BeautifulSoup(html, "html.parser")
 
     g_elements = soup.find_all("g", attrs={"class": "xwd__cell"})
 
     def parse_cell(g):
+        texts = g.find_all("text", attrs={"data-testid": "cell-text"})
+        number = texts[0].text if len(texts) > 1 else ""
+        letter = texts[-1].text.strip()[0] if texts else ""
+        
         return {
             "class": g.rect.get("class"),
             "x": float(g.rect.get("x")),
             "y": float(g.rect.get("y")),
-            "number": g.text,
+            "number": number,
+            "letter": letter,
         }
 
     cells = [parse_cell(g) for g in g_elements]
@@ -29,12 +68,13 @@ def get_mini_puzzle():
     grid = [[None for _ in cols] for _ in rows]
 
     for cell in cells:
-        row = rows.index(cell["y"])
-        col = cols.index(cell["x"])
+        row = rows.index(cell["x"])
+        col = cols.index(cell["y"])
+
         if "xwd__cell--block" in cell["class"]:
             grid[row][col] = None
         else:
-            grid[row][col] = cell["number"]
+            grid[row][col] = (cell["number"], cell["letter"])
 
     clue_lists = soup.find_all("div", attrs={"class": "xwd__clue-list--wrapper"})
     clues = soup.find_all("li", attrs={"class": "xwd__clue--li"})
