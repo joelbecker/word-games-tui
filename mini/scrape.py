@@ -1,6 +1,4 @@
 import time
-import selenium
-import os
 from utils import scrape_with_selenium
 
 def reveal_mini_solution(driver):
