@@ -154,7 +154,7 @@ class Crossword:
     def _character(self, i: int, j: int, is_hline: bool, is_vline: bool, is_center: bool, is_center_left: bool, is_center_right: bool) -> tuple[chr, int]:
         if is_center:
             cell = self.cells[i][j]
-            return self._color_character(i, j, cell.value if cell.is_filled else cell.number or " ", [(0, 0)])
+            return self._color_character(i, j, cell.value if cell.is_filled else " ", [(0, 0)])
         elif is_center_left:
             cell = self.cells[i][j]
             return self._color_character(i, j, "(" if cell.is_circled else " ", [(0, 0)])
