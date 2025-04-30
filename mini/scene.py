@@ -2,14 +2,22 @@ from dataclasses import dataclass
 import json
 import time
 import curses
-from time import sleep
+import textwrap
+from enum import StrEnum
 from typing import Iterable, Callable
 
 import utils
 from mini.cycle import Cycle
 
-# TODO: Add cell->word mappings
-# TODO: Add clue display
+
+@dataclass
+class CrosswordClue:
+    number: str
+    clue: str
+    is_across: bool
+
+    def __str__(self):
+        return f"{self.number}{'A' if self.is_across else 'D'} {self.clue}"
 
 @dataclass
 class CrosswordCell:
@@ -21,6 +29,8 @@ class CrosswordCell:
     value: str = " "
     is_filled: bool = False
     is_out_of_bounds: bool = False
+    across_clue: CrosswordClue = None
+    down_clue: CrosswordClue = None
 
     def __post_init__(self):
         assert self.value is not None
@@ -65,6 +75,9 @@ class Crossword:
         else:
             self.cells[i][j].set_value(c.upper())
             return True
+
+    def cursor_cell(self) -> CrosswordCell:
+        return self.cells[self.cursor_row][self.cursor_col]
 
     def is_filled(self, i: int, j: int) -> bool:
         return not self.is_out_of_bounds(i, j) and self.cells[i][j].is_filled
@@ -196,6 +209,26 @@ class Crossword:
                 except Exception as e:
                     stdscr.addstr(y + vbuffer, x + hbuffer, "#")
                     raise e
+
+        # if full_update or (self.cursor_h and self.prev_cursor_row != self.cursor_row):
+        if True:
+            clue_width = x_end + hbuffer
+            if self.cursor_h:
+                clue_text = str(self.cursor_cell().across_clue)
+            else:
+                clue_text = str(self.cursor_cell().down_clue)
+            min_lines = 3
+            wrapped_lines = textwrap.wrap(clue_text, width=clue_width)
+            wrapped_lines.extend([" ".center(clue_width)] * (min_lines - len(wrapped_lines)))
+            for i, line in enumerate(wrapped_lines):
+                centered_line = ' ' * (hbuffer // 2) + line.center(clue_width, ' ')
+                stdscr.addstr(
+                    y_end + vbuffer + 1 + i,
+                    0,
+                    centered_line,
+                    utils.Palette.white()
+                )
+
         stdscr.refresh()
     
 
@@ -382,13 +415,60 @@ class CrosswordController:
             stdscr.refresh()
             return
         
-def mini_scene(stdscr):
-    stdscr.clear()
+
+def read_mini_puzzle_data():
     from mini.scrape import MINI_PUZZLE_FILENAME, write_mini_puzzle_data
+    
+    def get_clue(is_across: bool, number: str, clues: list[CrosswordClue]) -> str:
+        for clue in clues:
+            if clue.number == number and clue.is_across == is_across:
+                return clue
+        return None
+    
+    
     write_mini_puzzle_data() # temp
     with open(MINI_PUZZLE_FILENAME, "r") as f:
         data = json.load(f)
+    
     puzzle = [[CrosswordCell(**d) for d in row] for row in data["grid"]]
+
+    clues = [CrosswordClue(
+        number=clue["number"],
+        clue=clue["clue"],
+        is_across=clue["direction"].lower() == "across"
+    ) for clue in data["clues"]]
+
+    across_numbers = set([c.number for c in clues if c.is_across])
+    down_numbers = set([c.number for c in clues if not c.is_across])
+
+    for i in range(len(puzzle)):
+        for j in range(len(puzzle[i])):
+            cell = puzzle[i][j]
+            if cell.is_out_of_bounds:
+                continue
+            if cell.number is not None and cell.number in across_numbers:
+                last_number = cell.number
+            clue = get_clue(True, last_number, clues)
+            cell.across_clue = clue
+            puzzle[i][j] = cell
+            
+
+    for j in range(len(puzzle[0])):
+        for i in range(len(puzzle)):
+            cell = puzzle[i][j]
+            if cell.is_out_of_bounds:
+                continue
+            if cell.number is not None and cell.number in down_numbers:
+                last_number = cell.number
+            clue = get_clue(False, last_number, clues)
+            cell.down_clue = clue
+            puzzle[i][j] = cell
+
+    return puzzle
+
+def mini_scene(stdscr):
+    stdscr.clear()
+    puzzle = read_mini_puzzle_data()
     crossword = Crossword(puzzle)
     controller = CrosswordController(crossword)
 

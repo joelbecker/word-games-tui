@@ -106,7 +106,7 @@ def get_mini_puzzle():
         for li in clue_list.find_all("li", attrs={"class": "xwd__clue--li"}):
             clue = {
                 "number": li.find("span", attrs={"class": "xwd__clue--label"}).text,
-                "text": li.find("span", attrs={"class": "xwd__clue--text"}).text,
+                "clue": li.find("span", attrs={"class": "xwd__clue--text"}).text,
                 "direction": direction,
             }
             clues.append(clue)
