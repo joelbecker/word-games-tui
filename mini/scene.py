@@ -423,11 +423,11 @@ class CrosswordController:
                         continue
                     
                     # Update display after handling input
-                    if self.puzzle.is_full and not nice_try_message_shown:
+                    if self.puzzle.is_solved:
+                        message = "Congratulations!"
+                    elif self.puzzle.is_full and not nice_try_message_shown:
                         message = "Not quite, keep trying!"
                         nice_try_message_shown = True
-                    elif self.puzzle.is_solved:
-                        message = "Congratulations!"
                     elif self.puzzle.cursor_h:
                         message = str(self.puzzle.cursor_cell().across_clue)
                     else:
