@@ -289,7 +289,7 @@ class CrosswordController:
             
             next_cell = next(self.puzzle.valid_cells)
 
-            if next_cell == self.puzzle.valid_cells.first():
+            if auto_skip and next_cell == self.puzzle.valid_cells.first():
                 
                 self.toggle_cursor_direction()
 
