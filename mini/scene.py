@@ -68,6 +68,21 @@ class Crossword:
         self.prev_cursor_row = self.cursor_row
         self.prev_cursor_col = self.cursor_col
         self.prev_cursor_h = self.cursor_h
+        self.prev_message = ""
+
+    @property
+    def is_full(self) -> bool:
+        return all(
+            cell.is_filled for row in self.cells
+            for cell in row if not cell.is_out_of_bounds
+        )
+    
+    @property
+    def is_solved(self) -> bool:
+        return all(
+            cell.is_filled and cell.value == cell.solution for row in self.cells
+            for cell in row if not cell.is_out_of_bounds
+        )
 
     def set_cell(self, i: int, j: int, c: str):
         if self.is_out_of_bounds(i, j):
@@ -159,7 +174,7 @@ class Crossword:
             rel_coords = [(0, 0)]
             return self._color_character(i, j, " ", rel_coords)
 
-    def update_display(self, stdscr, timer_seconds: int = 0, full_update: bool = False):
+    def update_display(self, stdscr, message: str = "", timer_seconds: int = 0, full_update: bool = False):
         def row_to_y(col: int) -> tuple[int, int]:
             return col * 2, (col + 1) * 2 + 1
         
@@ -210,18 +225,13 @@ class Crossword:
                     stdscr.addstr(y + vbuffer, x + hbuffer, "#")
                     raise e
 
-        # if full_update or (self.cursor_h and self.prev_cursor_row != self.cursor_row):
-        if True:
-            clue_width = x_end + hbuffer
-            if self.cursor_h:
-                clue_text = str(self.cursor_cell().across_clue)
-            else:
-                clue_text = str(self.cursor_cell().down_clue)
+        if message != self.prev_message:
+            text_width = x_end + hbuffer
             min_lines = 3
-            wrapped_lines = textwrap.wrap(clue_text, width=clue_width)
-            wrapped_lines.extend([" ".center(clue_width)] * (min_lines - len(wrapped_lines)))
+            wrapped_lines = textwrap.wrap(message, width=text_width)
+            wrapped_lines.extend([" ".center(text_width)] * (min_lines - len(wrapped_lines)))
             for i, line in enumerate(wrapped_lines):
-                centered_line = ' ' * (hbuffer // 2) + line.center(clue_width, ' ')
+                centered_line = ' ' * (hbuffer // 2) + line.center(text_width, ' ')
                 stdscr.addstr(
                     y_end + vbuffer + 1 + i,
                     0,
@@ -347,13 +357,22 @@ class CrosswordController:
 
     def run(self, stdscr):
         stdscr.nodelay(True)  # Enable non-blocking input
-        self.puzzle.update_display(stdscr, full_update=True)
+        nice_try_message_shown = False
         last_update_time = time.time()
+        message = str(self.puzzle.cursor_cell().across_clue)
+        
+        self.puzzle.update_display(
+            stdscr,
+            message=message,
+            timer_seconds=0,
+            full_update=True
+        )
 
         try:
             while True:
-                current_time = time.time()
-                timer_seconds = current_time - self.start_time
+                if not self.puzzle.is_solved:
+                    current_time = time.time()
+                    timer_seconds = current_time - self.start_time
 
                 # Check for input
                 key = stdscr.getch()
@@ -361,6 +380,7 @@ class CrosswordController:
                     self.puzzle.prev_cursor_row = self.puzzle.cursor_row
                     self.puzzle.prev_cursor_col = self.puzzle.cursor_col
                     self.puzzle.prev_cursor_h = self.puzzle.cursor_h
+                    self.puzzle.prev_message = message
 
                     if key == curses.KEY_BACKSPACE or key == 127:
                         if not self.puzzle.is_empty(self.puzzle.cursor_row, self.puzzle.cursor_col):
@@ -401,13 +421,33 @@ class CrosswordController:
                         self.move_cursor_right()
                     else:
                         continue
-
+                    
                     # Update display after handling input
-                    self.puzzle.update_display(stdscr, timer_seconds=timer_seconds, full_update=False)
+                    if self.puzzle.is_full and not nice_try_message_shown:
+                        message = "Not quite, keep trying!"
+                        nice_try_message_shown = True
+                    elif self.puzzle.is_solved:
+                        message = "Congratulations!"
+                    elif self.puzzle.cursor_h:
+                        message = str(self.puzzle.cursor_cell().across_clue)
+                    else:
+                        message = str(self.puzzle.cursor_cell().down_clue)
+                    
+                    self.puzzle.update_display(
+                        stdscr,
+                        message=message,
+                        timer_seconds=timer_seconds,
+                        full_update=False
+                    )
 
                 # Update display at least once per second
                 if current_time - last_update_time >= 1:
-                    self.puzzle.update_display(stdscr, timer_seconds=timer_seconds, full_update=False)
+                    self.puzzle.update_display(
+                        stdscr,
+                        message=message,
+                        timer_seconds=timer_seconds,
+                        full_update=False
+                    )
                     last_update_time = current_time
 
         except KeyboardInterrupt:
