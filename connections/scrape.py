@@ -7,6 +7,9 @@ import logging
 PUZZLE_FILE = os.path.expanduser('~/.wordgames/connections.json')
 LOG_FILE = os.path.expanduser('~/.wordgames/connections.log')
 
+# Ensure the directory exists before configuring logging
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
