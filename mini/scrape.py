@@ -31,7 +31,7 @@ def get_mini_puzzle():
 
     url = "https://www.nytimes.com/crosswords/game/mini"
 
-    use_cached = True
+    use_cached = False
 
     if use_cached:
         # temporary to avoid rate limiting
