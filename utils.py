@@ -40,7 +40,7 @@ def scrape_with_selenium(url, driver_actions=None):
     
     if is_termux():
         chrome_options.add_experimental_option('androidPackage', 'com.android.chrome')
-        driver = webdriver.Chrome('./chromedriver', options=chrome_options)
+        driver = webdriver.Chrome(options=chrome_options)
     else:
         driver = webdriver.Chrome(options=chrome_options)
         
