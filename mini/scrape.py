@@ -1,27 +1,43 @@
 import os
 import json
 import time
-from utils import scrape_with_selenium
+import inspect
+from utils import full_page_screenshot, scrape_with_selenium
 
 MINI_PUZZLE_FILENAME = os.path.expanduser("~/.wordgames/mini.json")
+SCREENSHOT_DIR = os.path.expanduser("~/Downloads/")
+
+def _is_called_from_test():
+    """Check if the current function is being called from test.py"""
+    for frame_info in inspect.stack():
+        if frame_info.filename.endswith('test.py'):
+            return True
+    return False
 
 def reveal_mini_solution(driver):
-    continue_button = driver.find_element("xpath", '/html/body/div[5]/div/div/button')
+    # Only save screenshots if called from test.py
+    save_screenshots = _is_called_from_test()
+    
+    if save_screenshots:
+        full_page_screenshot(driver, os.path.join(SCREENSHOT_DIR, "__1_mini_full_page.png"))
+    continue_button = driver.find_element("xpath", '//*[@id="portal-game-modals"]/div/div/div[2]/article/button')
     continue_button.click()
     time.sleep(1)
-
-    overlay = driver.find_element("xpath", '//*[@id="portal-game-modals"]/div/div/div[2]/article/button')
-    overlay.click()
-    time.sleep(1) 
     
+    if save_screenshots:
+        full_page_screenshot(driver, os.path.join(SCREENSHOT_DIR, "__2_mini_reveal_button.png"))
     reveal_button = driver.find_element("xpath", '//*[@id="portal-game-toolbar"]/div/ul/div[2]/li[2]/button')
     reveal_button.click()
     time.sleep(1)
     
+    if save_screenshots:
+        full_page_screenshot(driver, os.path.join(SCREENSHOT_DIR, "__3_mini_puzzle_button.png"))
     puzzle_button = driver.find_element("xpath", '//*[@id="portal-game-toolbar"]/div/ul/div[2]/li[2]/ul/li[3]/button')
     puzzle_button.click()
     time.sleep(1)
 
+    if save_screenshots:
+        full_page_screenshot(driver, os.path.join(SCREENSHOT_DIR, "__4_mini_confirm_button.png"))
     confirm_button = driver.find_element("xpath", '//*[@id="portal-game-modals"]/div/div/div[2]/article/div/button[2]')
     confirm_button.click()
 
@@ -122,3 +138,4 @@ def write_mini_puzzle_data():
     }
     with open(MINI_PUZZLE_FILENAME, "w") as f:
         json.dump(json_data, f, indent=4)
+
