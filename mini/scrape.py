@@ -49,18 +49,10 @@ def get_mini_puzzle():
 
     use_cached = False
 
-    if use_cached:
-        # temporary to avoid rate limiting
-        with open("mini.html", "r") as f:
-            # f.write(html)
-            html = f.read()
-    else:
-        html = scrape_with_selenium(
-            url,
-            driver_actions=reveal_mini_solution,
-        )
-        with open("mini.html", "w") as f:
-            f.write(html)
+    html = scrape_with_selenium(
+        url,
+        driver_actions=reveal_mini_solution,
+    )
 
     soup = bs4.BeautifulSoup(html, "html.parser")
 
