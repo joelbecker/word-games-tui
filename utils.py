@@ -1,18 +1,49 @@
 import re
 import curses
+import os
+import platform
 from selenium import webdriver
 
 WIDTH = 50
 
 
+def is_termux():
+    """Detect if running in Termux/Android environment"""
+    # Check for Termux-specific environment variables
+    if os.environ.get('TERMUX_VERSION') or os.environ.get('PREFIX', '').startswith('/data/data/com.termux'):
+        return True
+    
+    # Check if we're in the Termux file system structure
+    if os.path.exists('/data/data/com.termux/files/usr'):
+        return True
+    
+    # Additional check for Android system
+    try:
+        with open('/proc/version', 'r') as f:
+            version_info = f.read().lower()
+            if 'android' in version_info:
+                return True
+    except (FileNotFoundError, PermissionError):
+        pass
+    
+    return False
+
+
 def scrape_with_selenium(url, driver_actions=None):
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service
     
     chrome_options = Options()
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
-    driver = webdriver.Chrome(options=chrome_options)
+    
+    if is_termux():
+        chrome_options.add_experimental_option('androidPackage', 'com.android.chrome')
+        driver = webdriver.Chrome('./chromedriver', options=chrome_options)
+    else:
+        driver = webdriver.Chrome(options=chrome_options)
+        
     driver.get(url)
     if driver_actions:
         driver_actions(driver)
