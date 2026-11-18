@@ -1,5 +1,4 @@
   
-
               Hello kitty
 
         B   R   E   L   C   O
@@ -7,9 +6,9 @@
         D   A   U   A   L   N
               /              
         H   N   B   H   T   E
-          \   \   /   \      
+              \   /   \      
         E   G   C   D   M   T
-          /           /      
+                      /      
         G   U   O   O   U   C
         |         /          
         A   B   N   C   I   H
@@ -18,3 +17,4 @@
               \              
         A   C   Y   L   C   S
 
+                 GAB
