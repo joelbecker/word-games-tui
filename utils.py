@@ -2,7 +2,6 @@ import re
 import curses
 import os
 import platform
-from selenium import webdriver
 
 WIDTH = 50
 
@@ -134,7 +133,7 @@ class Palette:
         return curses.color_pair(240)
 
 
-def full_page_screenshot(driver: webdriver.Chrome, path: str = '/tmp/screenshot.png') -> None:
+def full_page_screenshot(driver: "webdriver.Chrome", path: str = '/tmp/screenshot.png') -> None:
     # Ref: https://stackoverflow.com/a/52572919/
     original_size = driver.get_window_size()
     required_width = driver.execute_script('return document.body.parentNode.scrollWidth')
