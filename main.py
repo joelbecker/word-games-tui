@@ -24,7 +24,6 @@ def main(stdscr):
             curses.init_pair(i + 1, i, -1)
 
     curses.curs_set(0)
-    stdscr.nodelay(1)
     
     games = [
         WordGame("wordle", wordle_scene, Palette.green()),
@@ -48,6 +47,8 @@ def main(stdscr):
             
             stdscr.refresh()
             
+            # Scenes change the input mode, so reset to blocking each time
+            stdscr.timeout(-1)
             key = stdscr.getch()
             
             if key == curses.KEY_UP or key == ord('k'):

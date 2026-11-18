@@ -108,6 +108,7 @@ def wordle_scene(stdscr):
     game.update_display(stdscr, "", full_update=True)
 
     input_buffer = ""
+    stdscr.timeout(-1)  # The loading screen leaves input non-blocking
     try:
         while True:
             key = stdscr.getch()

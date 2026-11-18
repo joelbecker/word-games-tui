@@ -200,6 +200,7 @@ def spellingbee_scene(stdscr):
     
     game.update_display(stdscr, full_update=True)
 
+    stdscr.timeout(-1)  # The loading screen leaves input non-blocking
     try:
         while True:
             key = stdscr.getch()

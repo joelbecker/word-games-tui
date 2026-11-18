@@ -356,7 +356,7 @@ class CrosswordController:
         )
 
     def run(self, stdscr):
-        stdscr.nodelay(True)  # Enable non-blocking input
+        stdscr.timeout(250)  # Wake periodically to update the timer
         nice_try_message_shown = False
         last_update_time = time.time()
         message = str(self.puzzle.cursor_cell().across_clue)

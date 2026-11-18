@@ -289,6 +289,7 @@ def connections_controller(words, categories, stdscr):
     state = ConnectionsGame(words, categories, stdscr)
     state.sort()
     state.update_display(full_update=True)
+    stdscr.timeout(-1)  # Block until a key is pressed
     try:
         while True:
             key = stdscr.getch()
