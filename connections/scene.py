@@ -12,6 +12,8 @@ import providers
 from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 from utils import Palette, justify, display_cols, display_rows, vertical_buffer, horizontal_buffer
 
+FLAGS = "?!&#"
+
 class CategoryColor:
     def __init__(self, name, value):
         self.name = name
@@ -58,21 +60,29 @@ class Word:
         return self.category.is_solved
 
     def selected(self, value=None):
-        return Word(
+        word = Word(
             self.word,
             self.category,
             value if value is not None else not self.is_selected
         )
-    
+        word.flag = self.flag  # Deselecting brings the flag back
+        return word
+
+    def cycle_flag(self):
+        """No flag -> ? -> ! -> & -> # -> no flag."""
+        options = [None] + list(FLAGS)
+        self.flag = options[(options.index(self.flag) + 1) % len(options)]
+
     def format(self, is_cursor=False, max_width=70):
+        # The cursor is already highlighted, so selection and flags take precedence over ">"
         if self.is_solved:
             prefix = "| "
-        elif is_cursor:
-            prefix = "> "
         elif self.is_selected:
             prefix = "* "
         elif self.flag:
             prefix = "{} ".format(self.flag)
+        elif is_cursor:
+            prefix = "> "
         else:
             prefix = "  "
         
@@ -175,6 +185,17 @@ class ConnectionsGame:
             self.message = "One away! Mistakes remaining: {}".format(self.mistakes_remaining)
         else:
             self.message = "Incorrect. Mistakes remaining: {}".format(self.mistakes_remaining)
+
+    def clear(self):
+        """Clear selections if there are any. Otherwise clear the flags that
+        match the flag at the cursor, or all flags if the cursor has none."""
+        if self.selected_words():
+            self.words = [w.selected(False) for w in self.words]
+            return
+        cursor_flag = self.words[self.cursor].flag
+        for w in self.words:
+            if cursor_flag is None or w.flag == cursor_flag:
+                w.flag = None
 
     def shuffle(self):
         self.order_seed = randint(4, 100)
@@ -288,7 +309,10 @@ class ConnectionsGame:
 
 
 def save_progress(state, record):
-    store.save_progress(record, {"guesses": [sorted(g) for g in state.guesses]})
+    store.save_progress(record, {
+        "guesses": [sorted(g) for g in state.guesses],
+        "flags": {w.word: w.flag for w in state.words if w.flag},
+    })
 
 
 def restore_progress(state, record):
@@ -297,8 +321,10 @@ def restore_progress(state, record):
         for w in state.words:
             w.is_selected = w.word in guess
         state.guess()
+    flags = record["progress"].get("flags", {})
     for w in state.words:
         w.is_selected = False
+        w.flag = flags.get(w.word)
 
 
 def connections_controller(words, categories, stdscr, record):
@@ -330,13 +356,12 @@ def connections_controller(words, categories, stdscr, record):
                 state.shuffle()
                 state.update_display(full_update=True)
             elif key == ord('f'):
-                state.words[state.cursor].flag = curses.ascii.ascii("?")
-                state.sort()
+                state.words[state.cursor].cycle_flag()
+                save_progress(state, record)
                 state.update_display()
             elif key == ord('c'):
-                for w in state.words:
-                    w.flag = None
-                    w.is_selected = False
+                state.clear()
+                save_progress(state, record)
                 state.update_display()
             elif key == ord('1'):
                 state.message = "Cheat code activated."
