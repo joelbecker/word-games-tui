@@ -113,11 +113,31 @@ def fetch_mini(date: str) -> dict:
     return mini_to_ipuz(data)
 
 
+def fetch_strands(date: str) -> dict:
+    data = json.loads(_get(f"https://www.nytimes.com/svc/strands/v2/{date}.json"))
+    _check_date(data["printDate"], date)
+    board = [row.upper() for row in data["startingBoard"]]
+    answers = dict(data["themeCoords"])
+    answers[data["spangram"]] = data["spangramCoords"]
+    for word, coords in answers.items():
+        if "".join(board[r][c] for r, c in coords) != word.upper():
+            raise providers.ProviderError(f"Strands coordinates don't spell {word}")
+    return {
+        "clue": data["clue"],
+        "board": board,
+        "theme_words": {w.upper(): coords for w, coords in data["themeCoords"].items()},
+        "spangram": data["spangram"].upper(),
+        "spangram_coords": data["spangramCoords"],
+        "valid_words": data.get("solutions", []),  # Non-theme words NYT accepts (for hints)
+    }
+
+
 FETCHERS = {
     "wordle": fetch_wordle,
     "connections": fetch_connections,
     "spellingbee": fetch_spellingbee,
     "mini": fetch_mini,
+    "strands": fetch_strands,
 }
 
 

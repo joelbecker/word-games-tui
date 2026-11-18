@@ -58,6 +58,8 @@ def providers_for(game: str) -> list:
     if game == "mini":
         from mini.scrape import CrossShareProvider
         return [NytProvider(), CrossShareProvider()]
+    if game == "strands":
+        return [NytProvider()]
     raise ValueError(f"Unknown game: {game}")
 
 

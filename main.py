@@ -8,7 +8,7 @@ from wordle.scene import wordle_scene
 from mini.scene import mini_scene
 from connections.scene import connections_scene
 from spellingbee.scene import spellingbee_scene
-from placeholder_scene import placeholder_scene
+from strands.scene import strands_scene
 
 @dataclass
 class WordGame:
@@ -29,7 +29,7 @@ def main(stdscr):
         WordGame("wordle", wordle_scene, Palette.green()),
         WordGame("connections", connections_scene, Palette.purple()),
         WordGame("mini", mini_scene, Palette.blue()),
-        WordGame("strands", placeholder_scene, Palette.red()),
+        WordGame("strands", strands_scene, Palette.red()),
         WordGame("spellingbee", spellingbee_scene, Palette.yellow())
     ]
     
