@@ -157,19 +157,21 @@ class ConnectionsGame:
         if all(w.is_solved for w in self.words):
             self.message = "You win!"
             self.update_display()
-        elif self.mistakes_remaining == 0:
+            return
+        if score == 4:
+            self.message = "Correct! Mistakes remaining: {}".format(self.mistakes_remaining)
+            return
+
+        self.mistakes_remaining -= 1
+        if self.mistakes_remaining == 0:
             for c in self.categories:
                 c.solved()
             self.message = "Out of guesses!"
             self.sort()
             self.update_display()
-        elif score == 4:
-            self.message = "Correct! Mistakes remaining: {}".format(self.mistakes_remaining)
         elif score == 3:
-            self.mistakes_remaining -= 1
             self.message = "One away! Mistakes remaining: {}".format(self.mistakes_remaining)
         else:
-            self.mistakes_remaining -= 1
             self.message = "Incorrect. Mistakes remaining: {}".format(self.mistakes_remaining)
 
     def shuffle(self):
