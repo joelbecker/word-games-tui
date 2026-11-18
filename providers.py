@@ -101,7 +101,8 @@ def providers_for(game: str) -> list:
         from spellingbee.scrape import RandomSpellingBeeProvider
         return configured_providers() + [RandomSpellingBeeProvider()]
     if game == "mini":
-        return configured_providers()
+        from mini.scrape import CrossShareProvider
+        return configured_providers() + [CrossShareProvider()]
     raise ValueError(f"Unknown game: {game}")
 
 

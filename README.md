@@ -31,7 +31,10 @@ Each game gets one puzzle per day from the first provider that has one:
 | Wordle | word-game-actions, Mashable, random (seeded by date) |
 | Connections | word-game-actions, Mashable |
 | Spelling Bee | word-game-actions, random (seeded by date) |
-| Mini | word-game-actions |
+| Mini | word-game-actions, [CrossShare daily mini](https://crosshare.org/dailyminis) |
+
+Mini puzzles are stored as [ipuz](http://www.ipuz.org/); `mini/puz.py`
+converts Across Lite `.puz` files.
 
 Puzzles and your progress are saved in `~/.wordgames/<game>/<date>.json`.
 A puzzle you have started is kept for the day, even if a better provider
