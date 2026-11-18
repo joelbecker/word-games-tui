@@ -1,13 +1,15 @@
 from dataclasses import dataclass
-import json
 import time
 import curses
+import curses.ascii
 import textwrap
-from enum import StrEnum
 from typing import Iterable, Callable
 
+import store
 import utils
 from mini.cycle import Cycle
+from mini.scrape import load_mini_data
+from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 
 
 @dataclass
@@ -244,9 +246,21 @@ class Crossword:
 
 class CrosswordController:
 
-    def __init__(self, puzzle: Crossword):
+    def __init__(self, puzzle: Crossword, record: dict):
         self.puzzle = puzzle
-        self.start_time = time.time()
+        self.record = record
+        # Resume the timer where the player left off
+        self.start_time = time.time() - record["progress"].get("elapsed", 0)
+
+    def save_progress(self, elapsed: float):
+        store.save_progress(self.record, {
+            "values": [
+                "".join(cell.value if cell.is_filled else " " for cell in row)
+                for row in self.puzzle.cells
+            ],
+            "elapsed": round(elapsed, 1),
+            "solved": self.puzzle.is_solved,
+        })
 
     def _move_cursor(self, rows, cols):
         new_coords = (self.puzzle.cursor_row + rows, self.puzzle.cursor_col + cols)
@@ -358,13 +372,17 @@ class CrosswordController:
     def run(self, stdscr):
         stdscr.timeout(250)  # Wake periodically to update the timer
         nice_try_message_shown = False
-        last_update_time = time.time()
-        message = str(self.puzzle.cursor_cell().across_clue)
-        
+        current_time = last_update_time = time.time()
+        timer_seconds = current_time - self.start_time
+        if self.puzzle.is_solved:
+            message = "Congratulations!"
+        else:
+            message = str(self.puzzle.cursor_cell().across_clue)
+
         self.puzzle.update_display(
             stdscr,
             message=message,
-            timer_seconds=0,
+            timer_seconds=timer_seconds,
             full_update=True
         )
 
@@ -421,7 +439,10 @@ class CrosswordController:
                         self.move_cursor_right()
                     else:
                         continue
-                    
+
+                    if key in (curses.KEY_BACKSPACE, 127) or curses.ascii.isalpha(key):
+                        self.save_progress(timer_seconds)
+
                     # Update display after handling input
                     if self.puzzle.is_solved:
                         message = "Congratulations!"
@@ -451,32 +472,63 @@ class CrosswordController:
                     last_update_time = current_time
 
         except KeyboardInterrupt:
+            self.save_progress(timer_seconds)
             stdscr.clear()
             stdscr.refresh()
             return
-        
 
-def read_mini_puzzle_data():
-    from mini.scrape import MINI_PUZZLE_FILENAME, write_mini_puzzle_data
-    
+
+def _ipuz_value(value):
+    """An ipuz cell or solution entry may be a plain value or {"cell"/"value": ...}."""
+    if isinstance(value, dict):
+        return value.get("cell", value.get("value"))
+    return value
+
+
+def cells_from_ipuz(ipuz: dict) -> list[list[CrosswordCell]]:
+    cells = []
+    for i, row in enumerate(ipuz["puzzle"]):
+        cells_row = []
+        for j, cell in enumerate(row):
+            solution = _ipuz_value(ipuz["solution"][i][j])
+            if _ipuz_value(cell) in ("#", None) or solution in ("#", None):
+                cells_row.append(CrosswordCell(i=i, j=j, solution=None, number=None, is_out_of_bounds=True))
+                continue
+            number = _ipuz_value(cell)
+            style = cell.get("style", {}) if isinstance(cell, dict) else {}
+            cells_row.append(CrosswordCell(
+                i=i,
+                j=j,
+                solution=str(solution)[0].upper(),  # Rebus answers are reduced to their first letter
+                number="" if number in (0, "0", "") else str(number),
+                is_circled=style.get("shapebg") == "circle",
+            ))
+        cells.append(cells_row)
+    return cells
+
+
+def clues_from_ipuz(ipuz: dict) -> list[CrosswordClue]:
+    clues = []
+    for direction, direction_clues in ipuz["clues"].items():
+        is_across = direction.split(":")[0].lower() == "across"
+        for clue in direction_clues:
+            if isinstance(clue, dict):
+                number, text = clue.get("number"), clue.get("clue", "")
+            else:
+                number, text = clue[0], clue[1]
+            clues.append(CrosswordClue(number=str(number), clue=text, is_across=is_across))
+    return clues
+
+
+def read_mini_puzzle_data(ipuz: dict):
     def get_clue(is_across: bool, number: str, clues: list[CrosswordClue]) -> str:
         for clue in clues:
             if clue.number == number and clue.is_across == is_across:
                 return clue
         return None
-    
-    
-    write_mini_puzzle_data() # temp
-    with open(MINI_PUZZLE_FILENAME, "r") as f:
-        data = json.load(f)
-    
-    puzzle = [[CrosswordCell(**d) for d in row] for row in data["grid"]]
 
-    clues = [CrosswordClue(
-        number=clue["number"],
-        clue=clue["clue"],
-        is_across=clue["direction"].lower() == "across"
-    ) for clue in data["clues"]]
+    puzzle = cells_from_ipuz(ipuz)
+    clues = clues_from_ipuz(ipuz)
 
     across_numbers = set([c.number for c in clues if c.is_across])
     down_numbers = set([c.number for c in clues if not c.is_across])
@@ -506,10 +558,20 @@ def read_mini_puzzle_data():
 
     return puzzle
 
+def restore_progress(crossword: Crossword, progress: dict):
+    for i, row in enumerate(progress.get("values", [])):
+        for j, value in enumerate(row):
+            if value.isalpha():
+                crossword.set_cell(i, j, value)
+
+
 def mini_scene(stdscr):
     stdscr.clear()
-    puzzle = read_mini_puzzle_data()
-    crossword = Crossword(puzzle)
-    controller = CrosswordController(crossword)
+    record = load_mini_data(stdscr)
+    if record is None:
+        return placeholder_scene(stdscr, NO_PUZZLE_MESSAGE)
+    crossword = Crossword(read_mini_puzzle_data(record["puzzle"]))
+    restore_progress(crossword, record["progress"])
+    controller = CrosswordController(crossword, record)
 
     controller.run(stdscr)

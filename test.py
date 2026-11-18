@@ -23,17 +23,9 @@ def test_connections():
 
     print("Done")
 
-def test_mini():
-    from mini import scrape
-    date, grid, clues = scrape.get_mini_puzzle()
-    scrape.write_mini_puzzle_data()
-    print(grid)
-    print(clues)
-    
 if __name__ == "__main__":
     tests = {
         "connections": test_connections,
-        "mini": test_mini,
     }
 
     parser = argparse.ArgumentParser(description="Run test functions.")

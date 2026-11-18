@@ -11,11 +11,16 @@ Resolution rules (see get_puzzle):
   random fallback was used).
 """
 import os
+import json
 import logging
+import urllib.error
+import urllib.request
 
 import store
+import wgcrypt
 
 LOG_FILE = os.path.join(store.ROOT, "providers.log")
+CONFIG_FILE = os.path.join(store.ROOT, "config.json")
 
 
 class ProviderError(Exception):
@@ -42,18 +47,61 @@ def _logger():
     return logger
 
 
+def load_config() -> dict:
+    """Settings from ~/.wordgames/config.json, overridable by environment variables."""
+    try:
+        with open(CONFIG_FILE) as f:
+            config = json.load(f)
+    except (OSError, ValueError):
+        config = {}
+    for key, env in (("actions_url", "WORDGAMES_ACTIONS_URL"), ("actions_password", "WORDGAMES_ACTIONS_PASSWORD")):
+        if os.environ.get(env):
+            config[key] = os.environ[env]
+    return config
+
+
+class ActionsProvider(Provider):
+    """NYT puzzles published by word-game-actions as encrypted files at
+    <actions_url>/<game>/<date>.json.enc."""
+    name = "actions"
+
+    def __init__(self, url: str, password: str):
+        self.url = url.rstrip("/")
+        self.password = password
+
+    def fetch(self, game, date):
+        url = f"{self.url}/{game}/{date}.json.enc"
+        request = urllib.request.Request(url, headers={"User-Agent": "word-games-tui"})
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                blob = response.read()
+        except urllib.error.HTTPError as e:
+            raise ProviderError(f"{url}: HTTP {e.code}") from e
+        return json.loads(wgcrypt.decrypt(blob, self.password))
+
+
+def configured_providers() -> list:
+    """Providers that only exist when set up in the config file."""
+    config = load_config()
+    if config.get("actions_url") and config.get("actions_password"):
+        return [ActionsProvider(config["actions_url"], config["actions_password"])]
+    return []
+
+
 def providers_for(game: str) -> list:
     """The providers for a game, best first. Imports are lazy so that a
     provider's optional dependencies are only needed when it is used."""
     if game == "wordle":
         from wordle.scrape import MashableWordleProvider, RandomWordleProvider
-        return [MashableWordleProvider(), RandomWordleProvider()]
+        return configured_providers() + [MashableWordleProvider(), RandomWordleProvider()]
     if game == "connections":
         from connections.scrape import MashableConnectionsProvider
-        return [MashableConnectionsProvider()]
+        return configured_providers() + [MashableConnectionsProvider()]
     if game == "spellingbee":
-        from spellingbee.scrape import NytSpellingBeeProvider, RandomSpellingBeeProvider
-        return [NytSpellingBeeProvider(), RandomSpellingBeeProvider()]
+        from spellingbee.scrape import RandomSpellingBeeProvider
+        return configured_providers() + [RandomSpellingBeeProvider()]
+    if game == "mini":
+        return configured_providers()
     raise ValueError(f"Unknown game: {game}")
 
 

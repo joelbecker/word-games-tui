@@ -1,34 +1,7 @@
-import json
 import random
 
 import providers
 from loading_scene import run_loading_animation
-from utils import scrape_with_selenium
-
-
-def get_spellingbee_words():
-    import bs4
-    url = "https://www.nytimes.com/puzzles/spelling-bee"
-
-    # Use scrape_with_selenium to fetch the page source
-    html = scrape_with_selenium(url)
-
-    soup = bs4.BeautifulSoup(html, "html.parser")
-    game_data_raw = soup.find(
-        "div",
-        attrs={
-            "id": "js-hook-pz-moment__game"
-        },
-        recursive=True
-    ).script.text.replace("window.gameData = ", "").replace(";", "")
-
-    game_data = json.loads(game_data_raw)
-
-    date = game_data["today"]["printDate"]
-    center_letter = game_data["today"]["centerLetter"]
-    spellingbee_words = game_data["today"]["answers"]
-
-    return center_letter, spellingbee_words, date
 
 
 def make_puzzle(center_letter, answers):
@@ -45,16 +18,6 @@ def make_puzzle(center_letter, answers):
         "letters": "".join(sorted(letters)),
         "answers": list(answers),
     }
-
-
-class NytSpellingBeeProvider(providers.Provider):
-    name = "nyt"
-
-    def fetch(self, game, date):
-        center_letter, answers, print_date = get_spellingbee_words()
-        if print_date != date:
-            raise providers.ProviderError(f"NYT puzzle is for {print_date}, not {date}")
-        return make_puzzle(center_letter, answers)
 
 
 class RandomSpellingBeeProvider(providers.Provider):

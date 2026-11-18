@@ -3,8 +3,11 @@ import curses
 import curses.ascii
 import random
 import os.path
-import english_dictionary.scripts.read_pickle as dictionary
 from dataclasses import dataclass
+try:
+    import english_dictionary.scripts.read_pickle as dictionary
+except ImportError:  # Optional: only used to tell "not a word" from "not in the solution"
+    dictionary = None
 
 import store
 import utils
@@ -63,7 +66,7 @@ class SpellingBeeGame:
         self.letters = set(letters.lower()).union(set(center_letter.lower()))
         self.center_letter = center_letter.lower()
         self.solution_words = set(solution_words)
-        self.dictionary = dictionary.get_dict()
+        self.dictionary = dictionary.get_dict() if dictionary else {}
         self.score = score
         self.max_pangrams = sum(1 for word in self.solution_words if self.is_pangram(word))
         self.max_perfect_pangrams = sum(1 for word in self.solution_words if self.is_perfect_pangram(word))
