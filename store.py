@@ -5,7 +5,7 @@ Each puzzle is saved as ~/.wordgames/<game>/<YYYY-MM-DD>.json:
     {
         "game": "wordle",
         "date": "2026-11-18",
-        "provider": "actions",
+        "provider": "nyt",
         "puzzle": {...},     # game-specific puzzle data from the provider
         "progress": {...}    # game-specific player progress; {} until started
     }

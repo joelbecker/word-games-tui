@@ -28,10 +28,14 @@ Each game gets one puzzle per day from the first provider that has one:
 
 | Game | Providers, best first |
 |---|---|
-| Wordle | word-game-actions, Mashable, random (seeded by date) |
-| Connections | word-game-actions, Mashable |
-| Spelling Bee | word-game-actions, random (seeded by date) |
-| Mini | word-game-actions, [CrossShare daily mini](https://crosshare.org/dailyminis) |
+| Wordle | NYT, Mashable, random (seeded by date) |
+| Connections | NYT, Mashable |
+| Spelling Bee | NYT, random (seeded by date) |
+| Mini | NYT, [CrossShare daily mini](https://crosshare.org/dailyminis) |
+
+NYT puzzles come from the data feeds the NYT game pages load (`nyt.py`).
+They are not an official API, so if NYT changes them the games fall back
+to the next provider until `nyt.py` is updated.
 
 Mini puzzles are stored as [ipuz](http://www.ipuz.org/); `mini/puz.py`
 converts Across Lite `.puz` files.
@@ -39,21 +43,5 @@ converts Across Lite `.puz` files.
 Puzzles and your progress are saved in `~/.wordgames/<game>/<date>.json`.
 A puzzle you have started is kept for the day, even if a better provider
 posts one later.
-
-### word-game-actions
-
-[word-game-actions](https://github.com/joelbecker/word-game-actions) fetches
-the NYT puzzles on GitHub Actions and publishes them encrypted. To use it,
-create `~/.wordgames/config.json`:
-
-```json
-{
-  "actions_url": "https://raw.githubusercontent.com/joelbecker/word-game-actions/main/data",
-  "actions_password": "<password>"
-}
-```
-
-`WORDGAMES_ACTIONS_URL` and `WORDGAMES_ACTIONS_PASSWORD` environment
-variables override the file.
 
 Provider errors are logged to `~/.wordgames/providers.log`.
