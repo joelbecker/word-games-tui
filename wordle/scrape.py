@@ -1,21 +1,23 @@
 import os
-import json
+import random
 import datetime
 
+import providers
 from loading_scene import run_loading_animation
 
-WORDLE_FILENAME = os.path.expanduser("~/.wordgames/wordle.json")
+WORDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def get_wordle_answer():
+
+def get_wordle_answer(date: str = None):
     import bs4
     import requests
-    month = datetime.datetime.now().strftime("%B").lower()
-    day = str(int(datetime.datetime.now().strftime("%d")))
-    year = datetime.datetime.now().strftime("%Y")
+    dt = datetime.date.fromisoformat(date) if date else datetime.date.today()
+    month = dt.strftime("%B").lower()
 
-    url = f"https://mashable.com/article/wordle-today-answer-{month}-{day}-{year}"
+    url = f"https://mashable.com/article/wordle-today-answer-{month}-{dt.day}-{dt.year}"
 
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
 
     soup = bs4.BeautifulSoup(response.text, "html.parser")
 
@@ -25,32 +27,24 @@ def get_wordle_answer():
 
     return wordle_answer
 
-def update_wordle_data(wordle_answer):
-    wordle_data = {
-        "wordle_answer": wordle_answer,
-        "date": datetime.datetime.now().strftime("%Y-%m-%d"),
-        "guesses": [],
-    }
-    
-    if not os.path.exists(os.path.dirname(WORDLE_FILENAME)):
-        os.makedirs(os.path.dirname(WORDLE_FILENAME))
-    
-    if not os.path.exists(WORDLE_FILENAME):
-        with open(WORDLE_FILENAME, "w") as f:
-            json.dump(wordle_data, f)
-    else:
-        with open(WORDLE_FILENAME, "r") as f:
-            data = json.load(f)
-            if data["date"] != wordle_data["date"]:
-                with open(WORDLE_FILENAME, "w") as f:
-                    json.dump(wordle_data, f)
+
+class MashableWordleProvider(providers.Provider):
+    name = "mashable"
+
+    def fetch(self, game, date):
+        return {"answer": get_wordle_answer(date)}
+
+
+class RandomWordleProvider(providers.Provider):
+    """One random answer per day, seeded by the date."""
+    name = "random"
+
+    def fetch(self, game, date):
+        with open(os.path.join(WORDLE_DIR, "answers.txt")) as f:
+            answers = sorted(w.strip() for w in f if len(w.strip()) == 5)
+        return {"answer": random.Random(f"wordle:{date}").choice(answers)}
+
 
 def load_wordle_data(stdscr):
     stdscr.clear()
-    wordle_answer = run_loading_animation(stdscr, get_wordle_answer, "Fetching Wordle answer...")
-    update_wordle_data(wordle_answer)
-
-    with open(WORDLE_FILENAME, "r") as f:
-        wordle_data = json.load(f)
-
-    return wordle_data
+    return run_loading_animation(stdscr, lambda: providers.get_puzzle("wordle"), "Fetching Wordle answer...")

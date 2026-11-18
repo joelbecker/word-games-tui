@@ -1,11 +1,14 @@
 import math
 import curses
+import curses.ascii
 import random
 import os.path
 import english_dictionary.scripts.read_pickle as dictionary
 from dataclasses import dataclass
 
+import store
 import utils
+from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 from spellingbee.scrape import load_spellingbee_data
 
 
@@ -187,17 +190,20 @@ def spellingbee_scene(stdscr):
     stdscr.timeout(100)
     stdscr.clear()
 
-    spellingbee_data = load_spellingbee_data(stdscr)
-    solution_words = spellingbee_data["spellingbee_words"]
-    center_letter = spellingbee_data["center_letter"]
-    letters = spellingbee_data["letters"]
+    record = load_spellingbee_data(stdscr)
+    if record is None:
+        return placeholder_scene(stdscr, NO_PUZZLE_MESSAGE)
+    puzzle = record["puzzle"]
 
     game = SpellingBeeGame(
-        letters=letters,
-        center_letter=center_letter,
-        solution_words=solution_words,
+        letters=puzzle["letters"],
+        center_letter=puzzle["center_letter"],
+        solution_words=puzzle["answers"],
     )
-    
+    for word in record["progress"].get("found", []):
+        game.guess(word)
+    game.message = "Welcome to Spelling Bee!"
+
     game.update_display(stdscr, full_update=True)
 
     stdscr.timeout(-1)  # The loading screen leaves input non-blocking
@@ -208,7 +214,10 @@ def spellingbee_scene(stdscr):
                 game.input_buffer = game.input_buffer[:-1]
                 game.update_display(stdscr)
             elif key == curses.KEY_ENTER or key in [10, 13]:
+                found_count = len(game.guesses)
                 word = game.guess(game.input_buffer)
+                if len(game.guesses) != found_count:
+                    store.save_progress(record, {"found": game.guesses})
                 is_correct_pangram = word in game.guesses and game.is_pangram(word)
                 game.update_display(stdscr, guess_submitted=True, highlight=is_correct_pangram)
             elif key == ord('1'):

@@ -1,10 +1,9 @@
 import os
-import json
 from datetime import datetime
 import logging
 
+import providers
 
-PUZZLE_FILE = os.path.expanduser('~/.wordgames/connections.json')
 LOG_FILE = os.path.expanduser('~/.wordgames/connections.log')
 
 # Ensure the directory exists before configuring logging
@@ -46,7 +45,8 @@ def get_connections_puzzle(url):
     from bs4 import BeautifulSoup
     from requests import get
     logging.info(f"Fetching puzzle from {url}")
-    response = get(url)
+    response = get(url, timeout=10)
+    response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     
     html_lists = soup.find_all("ul")
@@ -96,23 +96,18 @@ def fetch_latest_connections_puzzle(dt=None):
         connections_url += f'-{year}'
 
     scraped_categories, scraped_words = get_connections_puzzle(connections_url)
-    
-    puzzle_data = {
-        'date': datetime.now().strftime('%Y-%m-%d'),
+
+    return {
         'categories': scraped_categories,
         'words': scraped_words,
-        'guesses': [],
-        'is_finished': False,
     }
 
-    if not os.path.exists(os.path.dirname(PUZZLE_FILE)):
-        os.makedirs(os.path.dirname(PUZZLE_FILE))
 
-    with open(PUZZLE_FILE, 'w') as f:
-        json.dump(puzzle_data, f, indent=4)
-    print("Puzzle data saved to {}".format(PUZZLE_FILE))
-    
-    return puzzle_data
+class MashableConnectionsProvider(providers.Provider):
+    name = "mashable"
+
+    def fetch(self, game, date):
+        return fetch_latest_connections_puzzle(datetime.strptime(date, "%Y-%m-%d"))
 
 if __name__ == "__main__":
     try:

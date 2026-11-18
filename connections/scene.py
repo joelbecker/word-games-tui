@@ -7,8 +7,10 @@ from random import randint
 from datetime import datetime
 from textwrap import TextWrapper, wrap
 
+import store
+import providers
+from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 from utils import Palette, justify, display_cols, display_rows, vertical_buffer, horizontal_buffer
-from connections.scrape import PUZZLE_FILE, fetch_latest_connections_puzzle
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -285,9 +287,24 @@ class ConnectionsGame:
         self.stdscr.refresh()
 
 
-def connections_controller(words, categories, stdscr):
+def save_progress(state, record):
+    store.save_progress(record, {"guesses": [sorted(g) for g in state.guesses]})
+
+
+def restore_progress(state, record):
+    """Replay saved guesses so the board, mistakes and message match where the player left off."""
+    for guess in record["progress"].get("guesses", []):
+        for w in state.words:
+            w.is_selected = w.word in guess
+        state.guess()
+    for w in state.words:
+        w.is_selected = False
+
+
+def connections_controller(words, categories, stdscr, record):
     state = ConnectionsGame(words, categories, stdscr)
     state.sort()
+    restore_progress(state, record)
     state.update_display(full_update=True)
     stdscr.timeout(-1)  # Block until a key is pressed
     try:
@@ -304,7 +321,10 @@ def connections_controller(words, categories, stdscr):
                 state.select()
                 state.update_display(full_update=False)
             elif key == ord('g'):
+                guess_count = len(state.guesses)
                 state.guess()
+                if len(state.guesses) != guess_count:
+                    save_progress(state, record)
                 state.update_display(full_update=True)
             elif key == ord('r'):
                 state.shuffle()
@@ -335,27 +355,8 @@ def connections_controller(words, categories, stdscr):
         exit
 
 
-def load_puzzle():
-    try:
-        with open(PUZZLE_FILE, 'r') as f:
-            puzzle = json.load(f)
-    except:
-        print("Failed to load puzzle file.")
-        exit()
-    return puzzle
-
 def fetch_puzzle():
-    if not os.path.exists(PUZZLE_FILE):
-        fetch_latest_connections_puzzle()
-        puzzle = load_puzzle()
-    else:
-        puzzle = load_puzzle()
-    
-    if puzzle['date'] != datetime.now().strftime('%Y-%m-%d'):
-        fetch_latest_connections_puzzle()
-        puzzle = load_puzzle()
-
-    return puzzle
+    return providers.get_puzzle("connections")
 
 def loading_animation(stdscr, fetch_puzzle_event):
         stdscr.nodelay(True)
@@ -401,7 +402,10 @@ def connections_scene(stdscr):
     for i in range(0, curses.COLORS-1):
         curses.init_pair(i + 1, i, -1)
 
-    puzzle = puzzle_loading_screen(stdscr)
+    record = puzzle_loading_screen(stdscr)
+    if record is None:
+        return placeholder_scene(stdscr, NO_PUZZLE_MESSAGE)
+    puzzle = record["puzzle"]
 
     categories, category_words = puzzle["categories"], puzzle["words"]
     categories = {
@@ -416,4 +420,4 @@ def connections_scene(stdscr):
         for word in word_list:
             words.append(Word(word, categories[color]))
 
-    connections_controller(words, categories.values(), stdscr)
+    connections_controller(words, categories.values(), stdscr, record)

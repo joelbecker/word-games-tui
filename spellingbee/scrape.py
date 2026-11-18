@@ -1,31 +1,10 @@
-import re
-import os
 import json
-import logging
+import random
 
+import providers
 from loading_scene import run_loading_animation
 from utils import scrape_with_selenium
 
-SPELLINGBEE_FILENAME = os.path.expanduser("~/.wordgames/spellingbee.json")
-SPELLINGBEE_LOG = os.path.expanduser("~/.wordgames/spellingbee.log")
-
-# Set up logging
-logging.basicConfig(
-    filename=SPELLINGBEE_LOG,
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s'
-)
-
-def is_valid_spellingbee_word(word):
-    is_valid_format = len(word) > 3 and word.isalpha() 
-
-    # Scraped page contains non-words like cdEklow that need to be removed
-    # These are always the 7 letters with one emphasized by case
-    is_non_word = word != word.lower() and len(set(word)) == 7
-    if not is_non_word:
-        logging.info(f"Removed non-word: {word}")
-
-    return is_valid_format and not is_non_word
 
 def get_spellingbee_words():
     import bs4
@@ -33,9 +12,6 @@ def get_spellingbee_words():
 
     # Use scrape_with_selenium to fetch the page source
     html = scrape_with_selenium(url)
-    # Temporary to avoid rate limiting
-    # with open(os.path.expanduser("~/Downloads/spellingbee.html"), "r") as f:
-    #     html = f.read()
 
     soup = bs4.BeautifulSoup(html, "html.parser")
     game_data_raw = soup.find(
@@ -45,7 +21,7 @@ def get_spellingbee_words():
         },
         recursive=True
     ).script.text.replace("window.gameData = ", "").replace(";", "")
-    
+
     game_data = json.loads(game_data_raw)
 
     date = game_data["today"]["printDate"]
@@ -54,56 +30,64 @@ def get_spellingbee_words():
 
     return center_letter, spellingbee_words, date
 
-def update_spellingbee_data(spellingbee_words, center_letter, date):
-    letters = set(center_letter)
-    for word in spellingbee_words:
-        letters.update(word)
-    spellingbee_data = {
-        "spellingbee_words": spellingbee_words,
-        "letters": ''.join(letters),
-        "center_letter": center_letter,
-        "date": date,
-        "guesses": [],
-    }
-    
-    if not os.path.exists(os.path.dirname(SPELLINGBEE_FILENAME)):
-        os.makedirs(os.path.dirname(SPELLINGBEE_FILENAME))
-    
-    if not os.path.exists(SPELLINGBEE_FILENAME):
-        with open(SPELLINGBEE_FILENAME, "w") as f:
-            json.dump(spellingbee_data, f)
-    else:
-        with open(SPELLINGBEE_FILENAME, "r") as f:
-            try:
-                data = json.load(f)
-                if data["date"] != spellingbee_data["date"]:
-                    with open(SPELLINGBEE_FILENAME, "w") as g:
-                        json.dump(spellingbee_data, g)
-            except json.JSONDecodeError:
-                with open(SPELLINGBEE_FILENAME, "w") as g:
-                    json.dump(spellingbee_data, g)
 
-def validate_spellingbee_words(spellingbee_words, center_letter):
+def make_puzzle(center_letter, answers):
+    """Build and validate the stored puzzle data."""
     letters = set(center_letter)
-    for word in spellingbee_words:
+    for word in answers:
         if center_letter not in word:
             raise ValueError("solution contains word without center letter: {}".format(word))
         letters.update(word)
     if len(letters) != 7:
         raise ValueError("solution contains wrong number of letters: {}".format(letters))
+    return {
+        "center_letter": center_letter,
+        "letters": "".join(sorted(letters)),
+        "answers": list(answers),
+    }
+
+
+class NytSpellingBeeProvider(providers.Provider):
+    name = "nyt"
+
+    def fetch(self, game, date):
+        center_letter, answers, print_date = get_spellingbee_words()
+        if print_date != date:
+            raise providers.ProviderError(f"NYT puzzle is for {print_date}, not {date}")
+        return make_puzzle(center_letter, answers)
+
+
+class RandomSpellingBeeProvider(providers.Provider):
+    """One generated puzzle per day, seeded by the date.
+
+    Picks a 7-letter pangram from the dictionary the game already uses for
+    guess checking. Like the NYT puzzle, it never uses the letter S.
+    """
+    name = "random"
+    min_answers = 20
+    max_answers = 60
+
+    def fetch(self, game, date):
+        import english_dictionary.scripts.read_pickle as dictionary
+        words = sorted(
+            w for w in dictionary.get_dict()
+            if len(w) >= 4 and w.isascii() and w.isalpha() and w.islower() and "s" not in w
+        )
+        masks = [sum(1 << (ord(c) - 97) for c in set(w)) for w in words]
+        pangram_letters = sorted({"".join(sorted(set(w))) for w in words if len(set(w)) == 7})
+
+        rng = random.Random(f"spellingbee:{date}")
+        rng.shuffle(pangram_letters)
+        for letters in pangram_letters[:500]:
+            letters_mask = sum(1 << (ord(c) - 97) for c in letters)
+            candidates = [w for w, m in zip(words, masks) if m & ~letters_mask == 0]
+            for center_letter in rng.sample(letters, len(letters)):
+                answers = [w for w in candidates if center_letter in w]
+                if self.min_answers <= len(answers) <= self.max_answers:
+                    return make_puzzle(center_letter, answers)
+        raise providers.ProviderError("No suitable puzzle found")
+
 
 def load_spellingbee_data(stdscr):
     stdscr.clear()
-
-    center_letter, spellingbee_words, date = run_loading_animation(stdscr, get_spellingbee_words, "Fetching SpellingBee words...", min_time=0.5)
-    try:
-        validate_spellingbee_words(spellingbee_words, center_letter)
-    except ValueError as e:
-        import pdb; pdb.set_trace()
-
-    update_spellingbee_data(spellingbee_words, center_letter, date)
-
-    with open(SPELLINGBEE_FILENAME, "r") as f:
-        spellingbee_data = json.load(f)
-
-    return spellingbee_data
+    return run_loading_animation(stdscr, lambda: providers.get_puzzle("spellingbee"), "Fetching SpellingBee words...", min_time=0.5)

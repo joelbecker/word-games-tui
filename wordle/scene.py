@@ -2,7 +2,9 @@ import os
 import curses
 import curses.ascii
 
+import store
 import utils
+from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 from wordle.scrape import load_wordle_data
 
 WORDLE_DIR = os.path.dirname(__file__)    
@@ -101,10 +103,16 @@ def wordle_scene(stdscr):
     stdscr.timeout(100)
     stdscr.clear()
 
-    wordle_data = load_wordle_data(stdscr)
+    record = load_wordle_data(stdscr)
+    if record is None:
+        return placeholder_scene(stdscr, NO_PUZZLE_MESSAGE)
 
-    game = WordleGame(wordle_data["wordle_answer"], wordle_data["guesses"])
-    
+    game = WordleGame(record["puzzle"]["answer"], list(record["progress"].get("guesses", [])))
+    if game.is_win():
+        game.message = "You win!"
+    elif game.is_lose():
+        game.message = "Out of guesses! Answer was: " + game.secret.upper()
+
     game.update_display(stdscr, "", full_update=True)
 
     input_buffer = ""
@@ -124,6 +132,7 @@ def wordle_scene(stdscr):
                         game.guesses.append(input_buffer)
                         game.count += 1
                         input_buffer = ""
+                        store.save_progress(record, {"guesses": game.guesses})
                         if game.is_win():
                             game.message = "You win!"
                             game.update_display(stdscr, "", full_update=True)

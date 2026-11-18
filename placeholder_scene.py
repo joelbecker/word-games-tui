@@ -1,9 +1,11 @@
 from utils import vertical_buffer, horizontal_buffer, display_cols, display_rows
 
-def placeholder_scene(stdscr):
+NO_PUZZLE_MESSAGE = "No puzzle available today."
+
+
+def placeholder_scene(stdscr, content="Coming soon!"):
     stdscr.timeout(-1)
     stdscr.clear()
-    content = "Coming soon!"
     while True:
         vbuffer = vertical_buffer(1, display_rows(stdscr))
         hbuffer = horizontal_buffer(len(content) + 1, display_cols(stdscr))
