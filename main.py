@@ -18,6 +18,7 @@ class WordGame:
 
 
 def main(stdscr):
+    stdscr = utils.SafeWindow(stdscr)
 
     curses.use_default_colors()
     for i in range(0, curses.COLORS-1):

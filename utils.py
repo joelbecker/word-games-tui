@@ -4,6 +4,36 @@ import curses
 WIDTH = 50
 
 
+class SafeWindow:
+    """Wraps the curses screen so drawing outside it never crashes.
+
+    Text above, below or left of the screen is dropped, and text running
+    past the right edge is cut off. Everything else is passed through.
+    """
+
+    def __init__(self, window):
+        self._window = window
+
+    def __getattr__(self, name):
+        return getattr(self._window, name)
+
+    def addstr(self, *args):
+        if len(args) >= 3 and isinstance(args[0], int) and isinstance(args[1], int):
+            y, x, text, *attr = args
+            rows, cols = self._window.getmaxyx()
+            text = str(text)
+            if x < 0:
+                text, x = text[-x:], 0
+            text = text[:max(0, cols - x)]
+            if not text or not 0 <= y < rows:
+                return
+            args = (y, x, text, *attr)
+        try:
+            self._window.addstr(*args)
+        except curses.error:
+            pass  # e.g. writing the bottom-right cell, which curses reports as an error after drawing it
+
+
 def strip_ansi(s):
     return re.sub(r'\x1b[^m]*m', '', s)
      
