@@ -1,6 +1,7 @@
 import curses
 import curses.ascii
 
+import info_panel
 import store
 import utils
 from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
@@ -9,6 +10,13 @@ from strands.scrape import load_strands_data
 NEIGHBORS = [(dr, dc) for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0)]
 CELL_WIDTH = 4   # Letters are 4 columns apart, leaving room for "-" connectors
 CELL_HEIGHT = 2  # and a line between rows for "|", "/" and "\" connectors
+CONTROLS = [
+    ("letters", "type a word (only letters that fit)"),
+    ("enter", "guess"),
+    ("backspace", "delete a letter"),
+    ("0", "controls"),
+    ("ctrl+c", "back to menu"),
+]
 
 
 class StrandsGame:
@@ -192,6 +200,8 @@ def strands_scene(stdscr):
             key = stdscr.getch()
             if key in (curses.KEY_BACKSPACE, 127, 8):
                 game.backspace()
+            elif key == info_panel.CONTROLS_KEY:
+                info_panel.show_controls(stdscr, "Strands", CONTROLS, utils.Palette.red())
             elif key in (curses.KEY_ENTER, 10, 13):
                 if game.guess():
                     store.save_progress(record, {"found": game.found})

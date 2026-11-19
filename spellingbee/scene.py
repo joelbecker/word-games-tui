@@ -9,6 +9,7 @@ try:
 except ImportError:  # Optional: only used to tell "not a word" from "not in the solution"
     dictionary = None
 
+import info_panel
 import store
 import utils
 from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
@@ -152,7 +153,8 @@ class SpellingBeeGame:
         
         if full_update or reshuffle:
             grid = GRID_TEMPLATE
-            random.shuffle(self.outer_letters)
+            if reshuffle:
+                random.shuffle(self.outer_letters)
             for i, letter in enumerate(self.outer_letters):
                 grid = grid.replace(str(i+1), letter.upper())
             grid = grid.replace('7', self.center_letter.upper())
@@ -187,6 +189,47 @@ class SpellingBeeGame:
         stdscr.refresh()
 
 
+WORD_LIST_ROWS = 8
+WORD_LIST_COLUMNS = 3
+
+CONTROLS = [
+    ("letters", "type a word"),
+    ("enter", "guess"),
+    ("backspace", "delete a letter"),
+    ("1", "shuffle letters"),
+    ("2", "found words"),
+    ("3", "pangrams found"),
+    ("0", "controls"),
+    ("ctrl+c", "back to menu"),
+]
+
+
+def word_list_pages(game: SpellingBeeGame, display_cols: int) -> list:
+    """Found words, alphabetized, in columns filled top to bottom."""
+    words = sorted(w.upper() for w in game.guesses)
+    if not words:
+        return [[[("No words found yet", utils.Palette.gray())]]]
+    column_width = max(len(w) for w in words) + 4
+    columns = max(1, min(WORD_LIST_COLUMNS, (display_cols - 4) // column_width))
+    per_page = WORD_LIST_ROWS * columns
+    pages = []
+    for start in range(0, len(words), per_page):
+        chunk = words[start:start + per_page]
+        rows = math.ceil(len(chunk) / columns)
+        lines = []
+        for r in range(rows):
+            line = []
+            for c in range(columns):
+                index = c * rows + r
+                if index < len(chunk):
+                    word = chunk[index]
+                    color = utils.Palette.yellow() if game.is_pangram(word.lower()) else utils.Palette.white()
+                    line.append((word.ljust(column_width), color))
+            lines.append(line)
+        pages.append(lines)
+    return pages
+
+
 def spellingbee_scene(stdscr):
     curses.curs_set(0)
     stdscr.nodelay(1)
@@ -213,7 +256,7 @@ def spellingbee_scene(stdscr):
     try:
         while True:
             key = stdscr.getch()
-            if key == curses.KEY_BACKSPACE or key == 127:
+            if key in (curses.KEY_BACKSPACE, 127, 8):
                 game.input_buffer = game.input_buffer[:-1]
                 game.update_display(stdscr)
             elif key == curses.KEY_ENTER or key in [10, 13]:
@@ -226,12 +269,21 @@ def spellingbee_scene(stdscr):
             elif key == ord('1'):
                 game.update_display(stdscr, reshuffle=True)
             elif key == ord('2'):
-                game.message = f"Words: {len(game.guesses)}/{len(game.solution_words)}, Score: {game.score}/{game.max_score}"
-                game.update_display(stdscr, guess_submitted=True)
+                info_panel.show(
+                    stdscr,
+                    f"Found words ({len(game.guesses)})",
+                    word_list_pages(game, utils.display_cols(stdscr)),
+                    utils.Palette.yellow(),
+                    page_key=ord('2'),
+                )
+                game.update_display(stdscr, full_update=True)
+            elif key == info_panel.CONTROLS_KEY:
+                info_panel.show_controls(stdscr, "Spelling Bee", CONTROLS, utils.Palette.yellow())
+                game.update_display(stdscr, full_update=True)
             elif key == ord('3'):
                 game.message = f"Pangrams: {game.pangrams_found}/{game.max_pangrams}, Perfect pangrams: {game.perfect_pangrams_found}/{game.max_perfect_pangrams}"
                 game.update_display(stdscr, guess_submitted=True)
-            elif curses.ascii.isalpha(key):
+            elif 0 <= key < 256 and curses.ascii.isalpha(key):
                 game.input_buffer += chr(key).lower()
                 game.update_display(stdscr)
     except KeyboardInterrupt:

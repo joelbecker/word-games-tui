@@ -2,12 +2,20 @@ import os
 import curses
 import curses.ascii
 
+import info_panel
 import store
 import utils
 from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 from wordle.scrape import load_wordle_data
 
 WORDLE_DIR = os.path.dirname(__file__)    
+CONTROLS = [
+    ("letters", "type a guess"),
+    ("enter", "guess"),
+    ("backspace", "delete a letter"),
+    ("0", "controls"),
+    ("ctrl+c", "back to menu"),
+]
 KEYBOARD = "q w e r t y u i o p\na s d f g h j k l  \n  z x c v b n m      ".split("\n")
 
 
@@ -120,6 +128,10 @@ def wordle_scene(stdscr):
     try:
         while True:
             key = stdscr.getch()
+            if key == info_panel.CONTROLS_KEY:
+                info_panel.show_controls(stdscr, "Wordle", CONTROLS, utils.Palette.green())
+                game.update_display(stdscr, input_buffer, full_update=True)
+                continue
             if not game.is_win() and not game.is_lose():
                 if key == curses.KEY_BACKSPACE or key == 127:
                     input_buffer = input_buffer[:-1]

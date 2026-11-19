@@ -55,3 +55,25 @@ def save_progress(record: dict, progress: dict) -> None:
 
 def is_started(record) -> bool:
     return bool(record and record.get("progress"))
+
+
+SETTINGS_FILE = os.path.join(ROOT, "settings.json")
+DEFAULT_SETTINGS = {"show_controls": True}
+
+
+def load_settings() -> dict:
+    try:
+        with open(SETTINGS_FILE) as f:
+            return {**DEFAULT_SETTINGS, **json.load(f)}
+    except (OSError, ValueError):
+        return dict(DEFAULT_SETTINGS)
+
+
+def save_setting(key: str, value) -> None:
+    settings = load_settings()
+    settings[key] = value
+    os.makedirs(ROOT, exist_ok=True)
+    tmp = SETTINGS_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(settings, f)
+    os.replace(tmp, SETTINGS_FILE)

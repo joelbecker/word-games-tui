@@ -7,12 +7,24 @@ from random import randint
 from datetime import datetime
 from textwrap import TextWrapper, wrap
 
+import info_panel
 import store
 import providers
 from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 from utils import Palette, justify, display_cols, display_rows, vertical_buffer, horizontal_buffer
 
 FLAGS = "?!&#"
+CONTROLS = [
+    ("k / j", "move up / down"),
+    ("s", "select word"),
+    ("g", "guess"),
+    ("f", "cycle flag  ? ! & #"),
+    ("c", "clear selections / flags"),
+    ("r", "reshuffle"),
+    ("ctrl+k", "show / hide controls"),
+    ("0", "controls"),
+    ("q", "back to menu"),
+]
 
 class CategoryColor:
     def __init__(self, name, value):
@@ -120,6 +132,7 @@ class ConnectionsGame:
         self.order_seed = randint(4, 100)
         self.message = "Welcome to Connections!"
         self.stdscr = stdscr
+        self.show_controls = store.load_settings()["show_controls"]
     
     def selected_words(self):
         return [word for word in self.words if word.is_selected]
@@ -288,33 +301,34 @@ class ConnectionsGame:
                 Palette.white()
             )
 
-            controls1 = "[k]up [j]down [s]elect"
-            controls2 = "[g]uess [r]eshuffle [q]uit"
-            # controls3 = "[f]lag [c]lear"
-            is_control_message_split = len(controls1) + len(controls2) > self.display_cols - 2
-            self.stdscr.addstr(
-                len(self.words) + 3 + vertical_padding,
-                0,
-                justify(
-                    controls1 if is_control_message_split else "{} {}".format(controls1, controls2),
-                    block=column_width*2,
-                    width=column_width*2,
-                    justify="center"
-                ),
-                Palette.gray()
-            )
-            if is_control_message_split:
+            if self.show_controls:  # Ctrl+K hides them
+                controls1 = "[k]up [j]down [s]elect"
+                controls2 = "[g]uess [r]eshuffle [q]uit"
+                # controls3 = "[f]lag [c]lear"
+                is_control_message_split = len(controls1) + len(controls2) > self.display_cols - 2
                 self.stdscr.addstr(
-                    len(self.words) + 4 + vertical_padding,
+                    len(self.words) + 3 + vertical_padding,
                     0,
                     justify(
-                        controls2,
+                        controls1 if is_control_message_split else "{} {}".format(controls1, controls2),
                         block=column_width*2,
                         width=column_width*2,
                         justify="center"
                     ),
                     Palette.gray()
                 )
+                if is_control_message_split:
+                    self.stdscr.addstr(
+                        len(self.words) + 4 + vertical_padding,
+                        0,
+                        justify(
+                            controls2,
+                            block=column_width*2,
+                            width=column_width*2,
+                            justify="center"
+                        ),
+                        Palette.gray()
+                    )
         
         self.stdscr.refresh()
 
@@ -380,6 +394,13 @@ def connections_controller(words, categories, stdscr, record):
                     w.category.solved()
                 state.clear_solved_styling()
                 state.sort()
+                state.update_display(full_update=True)
+            elif key == info_panel.CTRL_K:
+                state.show_controls = not state.show_controls
+                store.save_setting("show_controls", state.show_controls)
+                state.update_display(full_update=True)
+            elif key == info_panel.CONTROLS_KEY:
+                info_panel.show_controls(stdscr, "Connections", CONTROLS, Palette.purple())
                 state.update_display(full_update=True)
             elif key == ord('q'):
                 stdscr.clear()

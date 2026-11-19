@@ -5,6 +5,7 @@ import curses.ascii
 import textwrap
 from typing import Iterable, Callable
 
+import info_panel
 import store
 import utils
 from mini.scrape import load_mini_data
@@ -45,6 +46,18 @@ class CrosswordCell:
             self.is_filled = True
         self.value = value
     
+
+CONTROLS = [
+    ("letters", "fill the square and move on"),
+    ("space", "switch across / down"),
+    ("enter / tab", "next unfinished word"),
+    ("shift+tab", "previous word"),
+    ("backspace", "delete"),
+    ("arrows", "move or switch direction"),
+    ("0", "controls"),
+    ("ctrl+c", "back to menu"),
+]
+
 
 def word_runs(cells: list[list[CrosswordCell]], across: bool) -> list[list[tuple[int, int]]]:
     """Runs of 2+ open squares in one direction, sorted by starting square
@@ -383,6 +396,12 @@ class CrosswordController:
 
                 # Check for input
                 key = stdscr.getch()
+                if key == info_panel.CONTROLS_KEY:
+                    info_panel.show_controls(stdscr, "Mini", CONTROLS, utils.Palette.blue())
+                    stdscr.timeout(250)
+                    self.puzzle.prev_message = None  # Force the clue to redraw
+                    self.puzzle.update_display(stdscr, message=message, timer_seconds=timer_seconds, full_update=True)
+                    continue
                 if key != -1:  # Input detected
                     self.puzzle.prev_cursor_row = self.puzzle.cursor_row
                     self.puzzle.prev_cursor_col = self.puzzle.cursor_col

@@ -1,3 +1,4 @@
+import info_panel
 import utils
 import curses
 from utils import Palette
@@ -9,6 +10,14 @@ from mini.scene import mini_scene
 from connections.scene import connections_scene
 from spellingbee.scene import spellingbee_scene
 from strands.scene import strands_scene
+
+MENU_CONTROLS = [
+    ("k / j", "move up / down"),
+    ("enter", "open game"),
+    ("0", "controls"),
+    ("q", "quit"),
+]
+
 
 @dataclass
 class WordGame:
@@ -56,6 +65,9 @@ def main(stdscr):
                 current_option = (current_option - 1) % len(games)
             elif key == curses.KEY_DOWN or key == ord('j'):
                 current_option = (current_option + 1) % len(games)
+            elif key == info_panel.CONTROLS_KEY:
+                info_panel.show_controls(stdscr, "Menu", MENU_CONTROLS, Palette.white())
+                stdscr.clear()
             elif key == ord('q'):
                 break
             elif key == ord('\n'):
