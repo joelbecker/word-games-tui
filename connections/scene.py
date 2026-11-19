@@ -100,7 +100,9 @@ class Word:
         return color if self.is_solved else None
 
     def attributes(self):
-        if self.is_selected:
+        if self.is_solved:
+            return curses.A_NORMAL
+        elif self.is_selected:
             return curses.A_BOLD
         elif self.flag:
             return curses.A_DIM
@@ -161,6 +163,7 @@ class ConnectionsGame:
                 self.selected_words()[0].category.solved()
                 self.sort()
             self.words = [w.selected(False) for w in self.words]
+            self.clear_solved_styling()
             self.guesses.append(guess)
         else:
             self.message = "Select 4 words to guess."
@@ -178,6 +181,7 @@ class ConnectionsGame:
         if self.mistakes_remaining == 0:
             for c in self.categories:
                 c.solved()
+            self.clear_solved_styling()
             self.message = "Out of guesses!"
             self.sort()
             self.update_display()
@@ -185,6 +189,13 @@ class ConnectionsGame:
             self.message = "One away! Mistakes remaining: {}".format(self.mistakes_remaining)
         else:
             self.message = "Incorrect. Mistakes remaining: {}".format(self.mistakes_remaining)
+
+    def clear_solved_styling(self):
+        """Solved words show only their category color: drop flags and selection."""
+        for w in self.words:
+            if w.is_solved:
+                w.flag = None
+                w.is_selected = False
 
     def clear(self):
         """Clear selections if there are any. Otherwise clear the flags that
@@ -324,7 +335,7 @@ def restore_progress(state, record):
     flags = record["progress"].get("flags", {})
     for w in state.words:
         w.is_selected = False
-        w.flag = flags.get(w.word)
+        w.flag = None if w.is_solved else flags.get(w.word)
 
 
 def connections_controller(words, categories, stdscr, record):
@@ -367,6 +378,7 @@ def connections_controller(words, categories, stdscr, record):
                 state.message = "Cheat code activated."
                 for w in state.words:
                     w.category.solved()
+                state.clear_solved_styling()
                 state.sort()
                 state.update_display(full_update=True)
             elif key == ord('q'):
