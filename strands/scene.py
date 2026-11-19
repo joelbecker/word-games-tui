@@ -114,9 +114,12 @@ class StrandsGame:
             y = min(r1, r2) * CELL_HEIGHT + (0 if dr == 0 else 1)
             if dc == 0:
                 x, char = c1 * CELL_WIDTH, "|"
+            elif dr == 0:
+                # Fill the whole gap so the strand reads as a solid line
+                x, char = min(c1, c2) * CELL_WIDTH + 1, "-" * (CELL_WIDTH - 1)
             else:
                 x = min(c1, c2) * CELL_WIDTH + CELL_WIDTH // 2
-                char = "-" if dr == 0 else ("\\" if dr * dc > 0 else "/")
+                char = "\\" if dr * dc > 0 else "/"
             existing = connectors.get((y, x))
             if existing and existing[0] != char and {existing[0], char} == {"/", "\\"}:
                 char = "X"  # Two placements cross here
@@ -127,9 +130,10 @@ class StrandsGame:
         grid_width = (self.cols - 1) * CELL_WIDTH + 1
         grid_height = (self.rows - 1) * CELL_HEIGHT + 1
         display_cols = utils.display_cols(stdscr)
+        # Header (strands/mockup2.txt): input or message, progress, clue, then the grid
         top = utils.vertical_buffer(grid_height + 6, utils.display_rows(stdscr))
         left = utils.horizontal_buffer(grid_width, display_cols)
-        grid_top = top + 2
+        grid_top = top + 6
 
         cell_attrs = {}
         connectors = {}
@@ -139,28 +143,33 @@ class StrandsGame:
                 cell_attrs[cell] = color
             self._connectors(self.answers[word], color, connectors)
 
-        bold_paths = list(self.placements)
-        if self.just_found:
-            bold_paths.append(self.answers[self.just_found])
-        for path in bold_paths:
+        # Placements of the current string: highlighted letters, bold connectors
+        for path in self.placements:
             for cell in path:
-                cell_attrs[cell] = cell_attrs.get(cell, utils.Palette.white()) | curses.A_BOLD
-            color = cell_attrs[path[0]] & ~curses.A_BOLD
+                cell_attrs[cell] = utils.Palette.white() | curses.A_BOLD | curses.A_REVERSE
+            self._connectors(path, utils.Palette.white() | curses.A_BOLD, connectors)
+        # A just-found word stays bold until the next search
+        if self.just_found:
+            path = self.answers[self.just_found]
+            color = cell_attrs[path[0]]
+            for cell in path:
+                cell_attrs[cell] = color | curses.A_BOLD
             self._connectors(path, color | curses.A_BOLD, connectors)
 
-        stdscr.addstr(top, 0, utils.center_text(stdscr, self.clue), utils.Palette.white())
+        if self.buffer:
+            stdscr.addstr(top, 0, utils.center_text(stdscr, self.buffer), utils.Palette.white() | curses.A_BOLD)
+        else:
+            stdscr.addstr(top, 0, utils.center_text(stdscr, self.message), utils.Palette.white())
+        progress = f"{len(self.found)} of {len(self.answers)} theme words found"
+        stdscr.addstr(top + 2, 0, utils.center_text(stdscr, progress), utils.Palette.gray())
+        stdscr.addstr(top + 4, 0, utils.center_text(stdscr, self.clue), utils.Palette.white())
+
         for r in range(self.rows):
             for c in range(self.cols):
                 attr = cell_attrs.get((r, c), utils.Palette.white())
                 stdscr.addstr(grid_top + r * CELL_HEIGHT, left + c * CELL_WIDTH, self.board[r][c], attr)
         for (y, x), (char, attr) in connectors.items():
             stdscr.addstr(grid_top + y, left + x, char, attr)
-
-        below = grid_top + grid_height + 1
-        stdscr.addstr(below, 0, utils.center_text(stdscr, self.buffer), utils.Palette.white() | curses.A_BOLD)
-        stdscr.addstr(below + 1, 0, utils.center_text(stdscr, self.message), utils.Palette.white())
-        progress = f"{len(self.found)} of {len(self.answers)} theme words found"
-        stdscr.addstr(below + 2, 0, utils.center_text(stdscr, progress), utils.Palette.gray())
         stdscr.refresh()
 
 
