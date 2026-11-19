@@ -7,7 +7,6 @@ from typing import Iterable, Callable
 
 import store
 import utils
-from mini.cycle import Cycle
 from mini.scrape import load_mini_data
 from placeholder_scene import placeholder_scene, NO_PUZZLE_MESSAGE
 
@@ -47,6 +46,26 @@ class CrosswordCell:
         self.value = value
     
 
+def word_runs(cells: list[list[CrosswordCell]], across: bool) -> list[list[tuple[int, int]]]:
+    """Runs of 2+ open squares in one direction, sorted by starting square
+    row by row, which is clue-number order."""
+    rows, cols = len(cells), len(cells[0])
+    words = []
+    for a in range(rows if across else cols):
+        run = []
+        for b in range(cols if across else rows):
+            i, j = (a, b) if across else (b, a)
+            if cells[i][j].is_out_of_bounds:
+                if len(run) > 1:
+                    words.append(run)
+                run = []
+            else:
+                run.append((i, j))
+        if len(run) > 1:
+            words.append(run)
+    return sorted(words)
+
+
 class Crossword:
     def __init__(self, cells: list[list[CrosswordCell]]) -> None:
         # definition
@@ -57,16 +76,13 @@ class Crossword:
         # validation
         assert all(len(row) == self.cols for row in cells), "All rows must have the same length"
         
-        # state
-        self.cursor_h = True
-        self.valid_cells = Cycle(
-            sorted([
-                (i, j) for i in range(self.rows)
-                for j in range(self.cols)
-                if not cells[i][j].is_out_of_bounds
-            ])
-        )
-        self.cursor_row, self.cursor_col = next(self.valid_cells)
+        # words: runs of 2+ open squares, in clue-number order
+        self.across_words = word_runs(cells, across=True)
+        self.down_words = word_runs(cells, across=False)
+
+        # state: start on 1-Across
+        self.cursor_h = bool(self.across_words)
+        self.cursor_row, self.cursor_col = (self.across_words or self.down_words)[0][0]
         self.prev_cursor_row = self.cursor_row
         self.prev_cursor_col = self.cursor_col
         self.prev_cursor_h = self.cursor_h
@@ -105,16 +121,21 @@ class Crossword:
     def is_cursor_cell(self, i: int, j: int) -> bool:
         return i == self.cursor_row and j == self.cursor_col
 
-    def is_cursor_lane(self, i: int, j: int) -> bool:
-        # TODO: Once cell->word mappings are defined, require that the cursor is on the same word
+    def word_at(self, i: int, j: int, across: bool):
+        for word in (self.across_words if across else self.down_words):
+            if (i, j) in word:
+                return word
+        return None
+
+    def current_word(self) -> list:
+        """The word under the cursor in the cursor's direction."""
         return (
-            i >= 0 and j >= 0 and i < self.rows and j < self.cols
-        ) and (
-            not self.cells[i][j].is_out_of_bounds
-        ) and (
-            (self.cursor_h and i == self.cursor_row)
-            or (not self.cursor_h and j == self.cursor_col)
+            self.word_at(self.cursor_row, self.cursor_col, self.cursor_h)
+            or [(self.cursor_row, self.cursor_col)]
         )
+
+    def is_cursor_lane(self, i: int, j: int) -> bool:
+        return (i, j) in self.current_word()
 
     def is_out_of_bounds(self, i: int, j: int) -> bool:
         return (i < 0 or j < 0 or i >= self.rows or j >= self.cols 
@@ -262,112 +283,80 @@ class CrosswordController:
             "solved": self.puzzle.is_solved,
         })
 
-    def _move_cursor(self, rows, cols):
-        new_coords = (self.puzzle.cursor_row + rows, self.puzzle.cursor_col + cols)
-        if not self.puzzle.is_out_of_bounds(*new_coords):
-            self.puzzle.cursor_row, self.puzzle.cursor_col = new_coords
-            self.puzzle.valid_cells.select(new_coords)
-            return True
-        else:
-            return False
-    
-    def move_cursor_up(self):
-        if self.puzzle.cursor_h:
-            self.toggle_cursor_direction()
-        return self._move_cursor(-1, 0)
-    
-    def move_cursor_down(self):
-        if self.puzzle.cursor_h:
-            self.toggle_cursor_direction()
-        return self._move_cursor(1, 0)
-    
-    def move_cursor_left(self):
-        if not self.puzzle.cursor_h:
-            self.toggle_cursor_direction()
-        return self._move_cursor(0, -1)
+    # Navigation. Words are visited in clue order: across, then down.
 
-    def move_cursor_right(self):
-        if not self.puzzle.cursor_h:
-            self.toggle_cursor_direction()
-        return self._move_cursor(0, 1)
+    def go_to(self, cell, across: bool):
+        """Move the cursor, switching direction if the square has no word that way."""
+        i, j = cell
+        if not self.puzzle.word_at(i, j, across) and self.puzzle.word_at(i, j, not across):
+            across = not across
+        self.puzzle.cursor_row, self.puzzle.cursor_col = cell
+        self.puzzle.cursor_h = across
 
     def toggle_cursor_direction(self):
-        # Reset cycle direction
-        if self.puzzle.cursor_h:
-            sort_key = lambda cell: (cell[1], cell[0])
-        else:
-            sort_key = lambda cell: (cell[0], cell[1])
-        
-        self.puzzle.valid_cells = Cycle(
-            sorted(
-                self.puzzle.valid_cells,
-                key=sort_key
-            )
-        )
-        
-        # Toggle direction
-        self.puzzle.cursor_h = not self.puzzle.cursor_h
+        i, j = self.puzzle.cursor_row, self.puzzle.cursor_col
+        if self.puzzle.word_at(i, j, not self.puzzle.cursor_h):
+            self.puzzle.cursor_h = not self.puzzle.cursor_h
 
-    def cycle_cell(self, auto_skip: bool = True, stop_at_end: bool = False, condition: Callable[[int, int], bool] = None):
-        def get_next_cell():
-            
-            next_cell = next(self.puzzle.valid_cells)
+    def first_empty(self, word):
+        return next((cell for cell in word if self.puzzle.is_empty(*cell)), None)
 
-            if auto_skip and next_cell == self.puzzle.valid_cells.first():
-                
-                self.toggle_cursor_direction()
+    def next_word(self, step: int = 1):
+        """Go to the next (or previous, step=-1) word with an empty square,
+        or simply the next word once the grid is full."""
+        order = [(w, True) for w in self.puzzle.across_words] + [(w, False) for w in self.puzzle.down_words]
+        current = (self.puzzle.current_word(), self.puzzle.cursor_h)
+        index = order.index(current) if current in order else -1
+        candidates = [order[(index + step * k) % len(order)] for k in range(1, len(order) + 1)]
+        for word, across in candidates:
+            empty = self.first_empty(word)
+            if empty:
+                return self.go_to(empty, across)
+        word, across = candidates[0]
+        self.go_to(word[0], across)
 
-                # Recalculate next cell
-                next_cell = next(self.puzzle.valid_cells)
+    def type_letter(self, letter: str):
+        word = self.puzzle.current_word()
+        was_full = all(self.puzzle.is_filled(*cell) for cell in word)
+        cell = (self.puzzle.cursor_row, self.puzzle.cursor_col)
+        self.puzzle.set_cell(*cell, letter)
+        index = word.index(cell)
+        if was_full or self.puzzle.is_full:
+            # Overwriting: step through the word without jumping away
+            if index + 1 < len(word):
+                self.go_to(word[index + 1], self.puzzle.cursor_h)
+            return
+        # Next empty square in this word, wrapping back to its start
+        for next_cell in word[index + 1:] + word[:index]:
+            if self.puzzle.is_empty(*next_cell):
+                return self.go_to(next_cell, self.puzzle.cursor_h)
+        self.next_word()
 
-            if auto_skip:
-                if self.puzzle.is_empty(*next_cell):
-                    return next_cell
-                else:
-                    return get_next_cell()
-            else:
-                return next_cell
-        
-        if condition is None:
-            condition = lambda i, j: (i, j) != (self.puzzle.cursor_row, self.puzzle.cursor_col)
+    def backspace(self):
+        cell = (self.puzzle.cursor_row, self.puzzle.cursor_col)
+        if self.puzzle.is_filled(*cell):
+            self.puzzle.set_cell(*cell, " ")
+            return
+        word = self.puzzle.current_word()
+        index = word.index(cell)
+        if index > 0:
+            self.go_to(word[index - 1], self.puzzle.cursor_h)
+            self.puzzle.set_cell(*word[index - 1], " ")
 
-        current_cell = (self.puzzle.cursor_row, self.puzzle.cursor_col)
-        
-        if stop_at_end:
-            # Do nothing if cursor is at the end of the lane
-            if self.puzzle.cursor_h and self.puzzle.is_out_of_bounds(self.puzzle.cursor_row, self.puzzle.cursor_col + 1):
-                return current_cell
-            elif not self.puzzle.cursor_h and self.puzzle.is_out_of_bounds(self.puzzle.cursor_row + 1, self.puzzle.cursor_col):
-                return current_cell
-
-        
-        # Check there are cells to cycle through
-        no_valid_cells = not any([(i, j) != current_cell and condition(i, j) for i, j in self.puzzle.valid_cells])
-        no_empty_cells = not any([self.puzzle.is_empty(i, j) for i, j in self.puzzle.valid_cells])
-        if auto_skip and (no_valid_cells or no_empty_cells):
-            return self.cycle_cell(
-                auto_skip=False,
-                condition=lambda i, j: True
-            )
-        
+    def arrow(self, di: int, dj: int):
+        """An arrow across the current direction only switches direction (as
+        in the NYT app); along it, it moves one square, skipping black squares."""
+        across = di == 0
+        i, j = self.puzzle.cursor_row, self.puzzle.cursor_col
+        if across != self.puzzle.cursor_h and self.puzzle.word_at(i, j, across):
+            self.puzzle.cursor_h = across
+            return
         while True:
-            next_cell = get_next_cell()
-
-            if condition(*next_cell):
-                self.puzzle.cursor_row, self.puzzle.cursor_col = next_cell
-                return next_cell
-            else:
-                continue
-
-    def cycle_lane(self, auto_skip: bool = True):
-        if self.puzzle.cursor_h:
-            next_lane_condition = lambda i, j: i != self.puzzle.cursor_row
-        else:
-            next_lane_condition = lambda i, j: j != self.puzzle.cursor_col
-        return self.cycle_cell(
-            auto_skip,
-            condition=next_lane_condition,
-        )
+            i, j = i + di, j + dj
+            if not (0 <= i < self.puzzle.rows and 0 <= j < self.puzzle.cols):
+                return
+            if not self.puzzle.is_out_of_bounds(i, j):
+                return self.go_to((i, j), self.puzzle.cursor_h)
 
     def run(self, stdscr):
         stdscr.timeout(250)  # Wake periodically to update the timer
@@ -400,47 +389,28 @@ class CrosswordController:
                     self.puzzle.prev_cursor_h = self.puzzle.cursor_h
                     self.puzzle.prev_message = message
 
-                    if key == curses.KEY_BACKSPACE or key == 127:
-                        if not self.puzzle.is_empty(self.puzzle.cursor_row, self.puzzle.cursor_col):
-                            self.puzzle.set_cell(
-                                self.puzzle.cursor_row,
-                                self.puzzle.cursor_col,
-                                " "
-                            )
-                        else:
-                            if self.puzzle.cursor_h:
-                                move_result = self.move_cursor_left()
-                            else:
-                                move_result = self.move_cursor_up()
-                            if move_result:
-                                self.puzzle.set_cell(
-                                    self.puzzle.cursor_row,
-                                    self.puzzle.cursor_col,
-                                    " "
-                                )
-                    elif key == curses.KEY_ENTER or key in [10, 13]:
-                        self.cycle_lane(auto_skip=True)
+                    if key in (curses.KEY_BACKSPACE, 127, 8):
+                        self.backspace()
+                    elif key in (curses.KEY_ENTER, 10, 13, 9):  # Enter or Tab
+                        self.next_word()
+                    elif key == curses.KEY_BTAB:  # Shift-Tab
+                        self.next_word(step=-1)
                     elif key == ord(" "):
-                        self.cycle_cell(auto_skip=True)
-                    elif curses.ascii.isalpha(key):
-                        self.puzzle.set_cell(
-                            self.puzzle.cursor_row,
-                            self.puzzle.cursor_col,
-                            chr(key)
-                        )
-                        self.cycle_cell(auto_skip=False, stop_at_end=True)
+                        self.toggle_cursor_direction()
+                    elif 0 <= key < 256 and curses.ascii.isalpha(key):
+                        self.type_letter(chr(key))
                     elif key == curses.KEY_UP:
-                        self.move_cursor_up()
+                        self.arrow(-1, 0)
                     elif key == curses.KEY_DOWN:
-                        self.move_cursor_down()
+                        self.arrow(1, 0)
                     elif key == curses.KEY_LEFT:
-                        self.move_cursor_left()
+                        self.arrow(0, -1)
                     elif key == curses.KEY_RIGHT:
-                        self.move_cursor_right()
+                        self.arrow(0, 1)
                     else:
                         continue
 
-                    if key in (curses.KEY_BACKSPACE, 127) or curses.ascii.isalpha(key):
+                    if key in (curses.KEY_BACKSPACE, 127, 8) or (0 <= key < 256 and curses.ascii.isalpha(key)):
                         self.save_progress(timer_seconds)
 
                     # Update display after handling input
@@ -530,31 +500,15 @@ def read_mini_puzzle_data(ipuz: dict):
     puzzle = cells_from_ipuz(ipuz)
     clues = clues_from_ipuz(ipuz)
 
-    across_numbers = set([c.number for c in clues if c.is_across])
-    down_numbers = set([c.number for c in clues if not c.is_across])
-
-    for i in range(len(puzzle)):
-        for j in range(len(puzzle[i])):
-            cell = puzzle[i][j]
-            if cell.is_out_of_bounds:
-                continue
-            if cell.number is not None and cell.number in across_numbers:
-                last_number = cell.number
-            clue = get_clue(True, last_number, clues)
-            cell.across_clue = clue
-            puzzle[i][j] = cell
-            
-
-    for j in range(len(puzzle[0])):
-        for i in range(len(puzzle)):
-            cell = puzzle[i][j]
-            if cell.is_out_of_bounds:
-                continue
-            if cell.number is not None and cell.number in down_numbers:
-                last_number = cell.number
-            clue = get_clue(False, last_number, clues)
-            cell.down_clue = clue
-            puzzle[i][j] = cell
+    for across in (True, False):
+        for word in word_runs(puzzle, across):
+            i, j = word[0]
+            clue = get_clue(across, puzzle[i][j].number, clues)
+            for i, j in word:
+                if across:
+                    puzzle[i][j].across_clue = clue
+                else:
+                    puzzle[i][j].down_clue = clue
 
     return puzzle
 
