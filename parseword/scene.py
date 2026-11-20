@@ -9,7 +9,7 @@ from parseword.game import ParsewordGame
 from parseword.scrape import load_parseword_data
 
 CONTROLS = [
-    ("h/l k/j", "previous / next word"),
+    ("h/l j/k", "previous / next word"),
     ("s", "select / deselect a word"),
     ("c", "clear the selection"),
     ("enter", "moves for the selection or word"),
@@ -255,9 +255,9 @@ class ParsewordScene:
             elif key == ord("c"):
                 self.clear_selection()
             return
-        if key in (ord("h"), ord("k"), curses.KEY_LEFT):
+        if key in (ord("h"), ord("j"), curses.KEY_LEFT):
             self.move(-1)
-        elif key in (ord("l"), ord("j"), curses.KEY_RIGHT):
+        elif key in (ord("l"), ord("k"), curses.KEY_RIGHT):
             self.move(1)
         elif key == ord("s"):
             self.toggle_select()
