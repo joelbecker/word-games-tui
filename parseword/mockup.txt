@@ -19,8 +19,8 @@ c run ch _and_ y -> crunchy
 
 -- Controls --
 
-h/j - move cursor to left (previous) word
-k/l - move cursor to right (next) word
+h/k - move cursor to left (previous) word
+j/l - move cursor to right (next) word
 s - select/deselect puzzle words
 enter - if no selection, nothing. if puzzle word(s) selected, move cursor to mutations/synonyms. if mutation/synonym selected, apply the mutation and set the cursor on the newly mutated puzzle word(s)
 delete - if in mutation/synonym, return to puzzle words. if selected puzzle words, deselect. otherwise, undo the last mutation. repeatedly pressing delete should eventually reset the puzzle
