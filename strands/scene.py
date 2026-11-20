@@ -138,10 +138,10 @@ class StrandsGame:
         grid_width = (self.cols - 1) * CELL_WIDTH + 1
         grid_height = (self.rows - 1) * CELL_HEIGHT + 1
         display_cols = utils.display_cols(stdscr)
-        # Typed word and clue above the grid; feedback and progress below it
-        top = utils.vertical_buffer(grid_height + 8, utils.display_rows(stdscr))
+        # strands/mockup2.txt: clue, grid, typed word, then feedback and progress
+        top = utils.vertical_buffer(grid_height + 7, utils.display_rows(stdscr))
         left = utils.horizontal_buffer(grid_width, display_cols)
-        grid_top = top + 4
+        grid_top = top + 2
 
         cell_attrs = {}
         connectors = {}
@@ -164,12 +164,12 @@ class StrandsGame:
                 cell_attrs[cell] = color | curses.A_BOLD
             self._connectors(path, color | curses.A_BOLD, connectors)
 
-        stdscr.addstr(top, 0, utils.center_text(stdscr, self.buffer), utils.Palette.white() | curses.A_BOLD)
-        stdscr.addstr(top + 2, 0, utils.center_text(stdscr, self.clue), utils.Palette.white())
-        below = grid_top + grid_height + 2
-        stdscr.addstr(below, 0, utils.center_text(stdscr, self.message), utils.Palette.white())
+        stdscr.addstr(top, 0, utils.center_text(stdscr, self.clue), utils.Palette.white())
+        below = grid_top + grid_height + 1
+        stdscr.addstr(below, 0, utils.center_text(stdscr, self.buffer), utils.Palette.white() | curses.A_BOLD)
+        stdscr.addstr(below + 2, 0, utils.center_text(stdscr, self.message), utils.Palette.white())
         progress = f"{len(self.found)} of {len(self.answers)} theme words found"
-        stdscr.addstr(below + 1, 0, utils.center_text(stdscr, progress), utils.Palette.gray())
+        stdscr.addstr(below + 3, 0, utils.center_text(stdscr, progress), utils.Palette.gray())
 
         for r in range(self.rows):
             for c in range(self.cols):
