@@ -31,6 +31,7 @@ Each game gets one puzzle per day from the first provider that has one:
 | Spelling Bee | NYT, random (seeded by date) |
 | Mini | NYT, [CrossShare daily mini](https://crosshare.org/dailyminis) |
 | Strands | NYT |
+| Parseword (scraper only; no game yet) | [parseword.com](https://www.parseword.com/daily) (today and yesterday only) |
 
 NYT puzzles come from the data feeds the NYT game pages load (`nyt.py`).
 They are not an official API, so if NYT changes them the games fall back

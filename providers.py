@@ -60,6 +60,9 @@ def providers_for(game: str) -> list:
         return [NytProvider(), CrossShareProvider()]
     if game == "strands":
         return [NytProvider()]
+    if game == "parseword":
+        from parseword.scrape import ParsewordProvider
+        return [ParsewordProvider()]
     raise ValueError(f"Unknown game: {game}")
 
 
