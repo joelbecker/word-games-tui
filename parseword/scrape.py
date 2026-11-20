@@ -22,8 +22,10 @@ The puzzle is stored as published, after checking the fields a game needs:
     difficulty, startingScore: as published
 """
 import json
+import datetime
 
 import providers
+import store
 from loading_scene import run_loading_animation
 
 URL = "https://www.parseword.com/puzzles/{date}.json"
@@ -65,6 +67,16 @@ class ParsewordProvider(providers.Provider):
         return fetch_parseword(date)
 
 
+def todays_or_yesterdays_puzzle():
+    """parseword.com releases each puzzle some hours after midnight Eastern,
+    so until today's is out, play yesterday's."""
+    record = providers.get_puzzle("parseword")
+    if record is None:
+        yesterday = datetime.date.fromisoformat(store.today()) - datetime.timedelta(days=1)
+        record = providers.get_puzzle("parseword", yesterday.isoformat())
+    return record
+
+
 def load_parseword_data(stdscr):
     stdscr.clear()
-    return run_loading_animation(stdscr, lambda: providers.get_puzzle("parseword"), "Fetching Parseword puzzle...")
+    return run_loading_animation(stdscr, todays_or_yesterdays_puzzle, "Fetching Parseword puzzle...")
