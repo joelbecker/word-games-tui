@@ -10,7 +10,7 @@ from parseword.scrape import load_parseword_data
 
 CONTROLS = [
     ("h / l", "move left / right"),
-    ("j / k", "change kind of move"),
+    ("j / k", "move up / down (mutations)"),
     ("s", "select a word"),
     ("c", "clear the selection"),
     ("enter", "show moves / confirm"),
