@@ -402,6 +402,9 @@ class CrosswordController:
                     self.puzzle.prev_message = None  # Force the clue to redraw
                     self.puzzle.update_display(stdscr, message=message, timer_seconds=timer_seconds, full_update=True)
                     continue
+                is_edit = key in (curses.KEY_BACKSPACE, 127, 8) or (0 <= key < 256 and curses.ascii.isalpha(key))
+                if is_edit and self.puzzle.is_solved:
+                    continue  # A solved puzzle is final: only moving around is allowed
                 if key != -1:  # Input detected
                     self.puzzle.prev_cursor_row = self.puzzle.cursor_row
                     self.puzzle.prev_cursor_col = self.puzzle.cursor_col
