@@ -10,6 +10,7 @@ from mini.scene import mini_scene
 from connections.scene import connections_scene
 from spellingbee.scene import spellingbee_scene
 from strands.scene import strands_scene
+from parseword.scene import parseword_scene
 
 MENU_CONTROLS = [
     ("k / j", "move up / down"),
@@ -40,7 +41,8 @@ def main(stdscr):
         WordGame("connections", connections_scene, Palette.purple()),
         WordGame("mini", mini_scene, Palette.blue()),
         WordGame("strands", strands_scene, Palette.red()),
-        WordGame("spellingbee", spellingbee_scene, Palette.yellow())
+        WordGame("spellingbee", spellingbee_scene, Palette.yellow()),
+        WordGame("parseword", parseword_scene, Palette.teal()),
     ]
     
     current_option = 0

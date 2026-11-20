@@ -1,0 +1,35 @@
+-- UI ---
+
+
+_Crusty_ caretakers initially manage
+     church and front of yard
+
+       Selection (front of)
+     AIRS / MASK / BOW / FACE
+     
+-- End screen --
+
+_Crusty_ CRUNCHY
+
+_front of_ yard -> y
+caretakers _initially_ -> c
+church -> ch
+manage -> run
+c run ch _and_ y -> crunchy
+
+-- Controls --
+
+h/j - move cursor to left (previous) word
+k/l - move cursor to right (next) word
+s - select/deselect puzzle words
+enter - if no selection, nothing. if puzzle word(s) selected, move cursor to mutations/synonyms. if mutation/synonym selected, apply the mutation and set the cursor on the newly mutated puzzle word(s)
+delete - if in mutation/synonym, return to puzzle words. if selected puzzle words, deselect. otherwise, undo the last mutation. repeatedly pressing delete should eventually reset the puzzle
+
+-- Notes --
+- Puzzle words are selected/deselected manually because multiple words can be selected. (Only adjacent words can be selected together. If a non-adjacent word is selected, it clears the previous selection.) Mutations/synonyms do not need to be selected because they are not combined.
+- The "definition" is underlined (e.g. _Crusty_ in my mockup notation)
+- The cursor should be reverse formatted text
+- Selections should be reverse formatted with the Parseword highlight colour (teal)
+- When selected, the "mutator" word should be underlined (e.g. FRONT of yard)
+- The mockup example is not logically consistent, e.g. "AIRS / MASK / BOW / FACE" show mutation options, "Selection (front of)" shows mutator formatting, etc.
+- When a mutation is applied, the word is capitalized and printed in the highlight colour (teal). Note that this can still be selected and combined with other words.

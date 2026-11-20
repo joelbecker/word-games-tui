@@ -96,6 +96,10 @@ class Palette:
         return curses.color_pair(203)
 
     @staticmethod
+    def teal():
+        return curses.color_pair(38)
+
+    @staticmethod
     def white():
         return curses.color_pair(253)
 
