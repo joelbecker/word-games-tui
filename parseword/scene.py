@@ -164,10 +164,10 @@ class ParsewordScene:
         return [(t.text.upper() if t.transformed else t.text, self._token_attr(i, t, show_cursor))
                 for i, t in enumerate(self.game.tokens)]
 
-    def _option_lines(self, groups, width, choosing):
+    def _option_lines(self, groups, width, choosing, empty="No moves for this selection"):
         """The moves for the selection; the cursor is shown while choosing."""
         if not groups:
-            return [[], [("No moves for this selection", utils.Palette.gray())]]
+            return [[], [(empty, utils.Palette.gray())]]
         lines = []
         index = 0 if choosing else -1
         for heading, _, opts in groups:
@@ -220,6 +220,10 @@ class ParsewordScene:
             lines += self._option_lines(self.groups, width, choosing=True)
         elif self.selection:
             lines += self._option_lines(self.selection_options(), width, choosing=False)
+        elif self.cursor is not None:
+            # Nothing selected: preview the moves for the word under the cursor
+            lines += self._option_lines(self.game.options(self.cursor, self.cursor + 1), width,
+                                        choosing=False, empty="No moves for this word")
 
         top = max(0, utils.vertical_buffer(len(lines), utils.display_rows(stdscr)))
         cols = stdscr.getmaxyx()[1]
