@@ -13,7 +13,7 @@ CONTROLS = [
     ("j / k", "next / previous kind of move"),
     ("s", "select / deselect a word"),
     ("c", "clear the selection"),
-    ("enter", "choose from the moves shown, or make the move"),
+    ("enter", "choose a move for the selection (or the word under the cursor), or make the move"),
     ("backspace", "back to the words, deselect, or undo"),
     ("0", "controls"),
     ("ctrl+c", "back to menu"),
@@ -50,6 +50,7 @@ class ParsewordScene:
         self.selection = []       # Selected token indices, always adjacent
         self.groups = None        # Moves on offer while choosing one
         self.option_cursor = 0
+        self.auto_selected = False  # The selection was made by Enter on a word
 
     # Words
 
@@ -69,6 +70,7 @@ class ParsewordScene:
             self.cursor = i
 
     def toggle_select(self):
+        self.auto_selected = False
         i = self.cursor
         if i is None:
             return
@@ -86,6 +88,12 @@ class ParsewordScene:
         return self.game.options(self.selection[0], self.selection[-1] + 1)
 
     def choose_move(self):
+        if not self.selection and self.cursor is not None:
+            # Enter on an unselected word selects it, if it has moves
+            if not self.game.options(self.cursor, self.cursor + 1):
+                return
+            self.selection = [self.cursor]
+            self.auto_selected = True
         groups = self.selection_options()
         if groups:
             self.groups, self.option_cursor = groups, 0
@@ -118,6 +126,8 @@ class ParsewordScene:
     def back(self):
         if self.groups is not None:
             self.groups = None
+            if self.auto_selected:  # Enter made the selection, so undo that too
+                self.selection, self.auto_selected = [], False
         elif self.selection:
             self.selection = []
         else:
