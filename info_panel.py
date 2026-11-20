@@ -4,6 +4,7 @@ The panel replaces the game screen until a key closes it. The caller
 redraws its own screen afterwards.
 """
 import curses
+import textwrap
 
 import utils
 
@@ -61,5 +62,10 @@ def _draw(stdscr, title, pages, page, color, page_key):
 def show_controls(stdscr, game_name: str, controls: list, color: int):
     """Controls panel: controls is a list of (keys, description) pairs."""
     key_width = max(len(keys) for keys, _ in controls) + 4
-    lines = [[(keys.ljust(key_width), color), (description, utils.Palette.white())] for keys, description in controls]
+    # Wrap descriptions that do not fit, indenting the rest under the first line
+    desc_width = max(10, utils.display_cols(stdscr) - key_width - 2)
+    lines = []
+    for keys, description in controls:
+        for i, text in enumerate(textwrap.wrap(description, desc_width) or [""]):
+            lines.append([((keys if i == 0 else "").ljust(key_width), color), (text, utils.Palette.white())])
     show(stdscr, f"{game_name} controls", [lines], color)
