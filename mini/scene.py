@@ -407,6 +407,7 @@ class CrosswordController:
                     self.puzzle.prev_cursor_col = self.puzzle.cursor_col
                     self.puzzle.prev_cursor_h = self.puzzle.cursor_h
                     self.puzzle.prev_message = message
+                    was_solved = self.puzzle.is_solved
 
                     if key in (curses.KEY_BACKSPACE, 127, 8):
                         self.backspace()
@@ -433,9 +434,11 @@ class CrosswordController:
                         self.save_progress(timer_seconds)
 
                     # Update display after handling input
-                    if self.puzzle.is_solved:
+                    # Congratulate once; after that, show clues again so the
+                    # player can read the ones they never needed
+                    if self.puzzle.is_solved and not was_solved:
                         message = "Congratulations!"
-                    elif self.puzzle.is_full and not nice_try_message_shown:
+                    elif not self.puzzle.is_solved and self.puzzle.is_full and not nice_try_message_shown:
                         message = "Not quite, keep trying!"
                         nice_try_message_shown = True
                     elif self.puzzle.cursor_h:
