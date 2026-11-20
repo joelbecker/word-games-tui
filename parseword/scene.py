@@ -12,7 +12,8 @@ CONTROLS = [
     ("h / l", "previous / next word or move"),
     ("j / k", "next / previous kind of move"),
     ("s", "select / deselect a word"),
-    ("enter", "show moves for the selection, or make the move"),
+    ("c", "clear the selection"),
+    ("enter", "choose from the moves shown, or make the move"),
     ("backspace", "back to the words, deselect, or undo"),
     ("0", "controls"),
     ("ctrl+c", "back to menu"),
@@ -49,7 +50,6 @@ class ParsewordScene:
         self.selection = []       # Selected token indices, always adjacent
         self.groups = None        # Moves on offer while choosing one
         self.option_cursor = 0
-        self.message = ""
 
     # Words
 
@@ -80,15 +80,18 @@ class ParsewordScene:
         else:
             self.selection = [i]
 
-    def show_moves(self):
+    def selection_options(self):
         if not self.selection:
-            return
-        groups = self.game.options(self.selection[0], self.selection[-1] + 1)
+            return []
+        return self.game.options(self.selection[0], self.selection[-1] + 1)
+
+    def choose_move(self):
+        groups = self.selection_options()
         if groups:
             self.groups, self.option_cursor = groups, 0
-            self.message = ""
-        else:
-            self.message = "No moves for this selection"
+
+    def clear_selection(self):
+        self.groups, self.selection = None, []
 
     # Moves
 
@@ -113,7 +116,6 @@ class ParsewordScene:
         self.save()
 
     def back(self):
-        self.message = ""
         if self.groups is not None:
             self.groups = None
         elif self.selection:
@@ -150,20 +152,24 @@ class ParsewordScene:
         return [(t.text.upper() if t.transformed else t.text, self._token_attr(i, t, show_cursor))
                 for i, t in enumerate(self.game.tokens)]
 
-    def _option_lines(self, width):
+    def _option_lines(self, groups, width, choosing):
+        """The moves for the selection; the cursor is shown while choosing."""
+        if not groups:
+            return [[], [("No moves for this selection", utils.Palette.gray())]]
         lines = []
-        index = 0
-        for heading, _, opts in self.groups:
+        index = 0 if choosing else -1
+        for heading, _, opts in groups:
             lines.append([])
             lines.append([(heading, utils.Palette.gray())])
             parts = []
             for k, option in enumerate(opts):
                 attr = utils.Palette.white()
-                if index == self.option_cursor:
+                if choosing and index == self.option_cursor:
                     attr |= curses.A_REVERSE | curses.A_BOLD
                 text = option.result.upper()
                 parts.append((text + (" /" if k < len(opts) - 1 else ""), attr))
-                index += 1
+                if choosing:
+                    index += 1
             lines += self._split_slashes(wrap(parts, width))
         return lines
 
@@ -199,9 +205,9 @@ class ParsewordScene:
         if solved:
             lines += self._step_lines(width)
         elif self.groups is not None:
-            lines += self._option_lines(width)
-        if self.message:
-            lines += [[], [(self.message, utils.Palette.gray())]]
+            lines += self._option_lines(self.groups, width, choosing=True)
+        elif self.selection:
+            lines += self._option_lines(self.selection_options(), width, choosing=False)
 
         top = max(0, utils.vertical_buffer(len(lines), utils.display_rows(stdscr)))
         cols = stdscr.getmaxyx()[1]
@@ -230,16 +236,19 @@ class ParsewordScene:
                 self.make_move()
             elif key in BACKSPACE_KEYS:
                 self.back()
+            elif key == ord("c"):
+                self.clear_selection()
             return
-        self.message = ""
         if key in (ord("h"), curses.KEY_LEFT):
             self.move(-1)
         elif key in (ord("l"), curses.KEY_RIGHT):
             self.move(1)
         elif key == ord("s"):
             self.toggle_select()
+        elif key == ord("c"):
+            self.clear_selection()
         elif key in ENTER_KEYS:
-            self.show_moves()
+            self.choose_move()
         elif key in BACKSPACE_KEYS:
             self.back()
 

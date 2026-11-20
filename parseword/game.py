@@ -8,7 +8,6 @@ replaces them with one of the moves on offer:
 * wordplay worked out from indicator words in the selection, using the
   puzzle's "wordTypes". The generators follow parseword.com's: an indicator
   acts on the "fodder" words before and/or after it in the selection.
-* joining several words into one
 * the puzzle's own solving step, when the selection is exactly its "before".
   This keeps every puzzle solvable, since the site also knows indicators
   that the puzzle file doesn't list.
@@ -359,9 +358,6 @@ class ParsewordGame:
                 indicator = " ".join(keys[i:j])
                 for t in self.word_types.get(indicator, []):
                     found += self._generate(t, keys, i, j, selection)
-
-        if len(keys) > 1:
-            found.append(Option("charade", None, "".join(keys)))
 
         for m in self.mutations:
             if self._key(m["before"]) == phrase:
