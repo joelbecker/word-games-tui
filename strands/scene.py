@@ -11,7 +11,7 @@ NEIGHBORS = [(dr, dc) for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (
 CELL_WIDTH = 4   # Letters are 4 columns apart, leaving room for "-" connectors
 CELL_HEIGHT = 2  # and a line between rows for "|", "/" and "\" connectors
 CONTROLS = [
-    ("letters", "type a word (only letters that fit)"),
+    ("letters", "type a word"),
     ("enter", "guess"),
     ("backspace", "delete a letter"),
     ("0", "controls"),
@@ -29,7 +29,8 @@ class StrandsGame:
         self.answers[self.spangram] = [tuple(c) for c in puzzle["spangram_coords"]]
         self.found = [w for w in found if w in self.answers]
         self.buffer = ""
-        self.placements = []    # Every path on the board that spells the buffer
+        self.placements = []    # Every path on the board that spells the placeable part of the buffer
+        self.placeable = 0      # How many leading letters of the buffer fit on the board
         self.just_found = None  # Stays bold until the next search starts
         self.message = ""
 
@@ -68,31 +69,35 @@ class StrandsGame:
                     extend([(r, c)])
         return results
 
-    def valid_next_letters(self) -> set:
-        return {
-            letter for letter in set("".join(self.board))
-            if self.find_placements(self.buffer + letter)
-        }
+    def _update_placements(self):
+        """Place the longest leading part of the buffer that fits on the board;
+        the letters after it are shown grayed out (like Spelling Bee)."""
+        for n in range(len(self.buffer), 0, -1):
+            placements = self.find_placements(self.buffer[:n])
+            if placements:
+                self.placements, self.placeable = placements, n
+                return
+        self.placements, self.placeable = [], 0
 
     def type_letter(self, letter: str) -> bool:
-        """Add a letter if the result can still be placed on the board."""
-        letter = letter.upper()
-        if self.is_complete or letter not in self.valid_next_letters():
+        """Add any letter; ones that do not fit on the board are grayed out."""
+        if self.is_complete:
             return False
         if not self.buffer:  # A new search
             self.just_found = None
             self.message = ""
-        self.buffer += letter
-        self.placements = self.find_placements(self.buffer)
+        self.buffer += letter.upper()
+        self._update_placements()
         return True
 
     def backspace(self):
         self.buffer = self.buffer[:-1]
-        self.placements = self.find_placements(self.buffer)
+        self._update_placements()
 
     def guess(self) -> bool:
         """Returns True if a new word was found."""
-        word, self.buffer, self.placements = self.buffer, "", []
+        word, placeable = self.buffer, self.placeable
+        self.buffer, self.placements, self.placeable = "", [], 0
         if not word:
             return False
         if word in self.found:
@@ -109,6 +114,8 @@ class StrandsGame:
             return True
         elif len(word) < 4:
             self.message = "Too short"
+        elif placeable < len(word):
+            self.message = f"{word} is not on the board"
         else:
             self.message = f"{word} is not a theme word"
         return False
@@ -166,7 +173,11 @@ class StrandsGame:
 
         stdscr.addstr(top, 0, utils.center_text(stdscr, self.clue), utils.Palette.white())
         below = grid_top + grid_height + 1
-        stdscr.addstr(below, 0, utils.center_text(stdscr, self.buffer), utils.Palette.white() | curses.A_BOLD)
+        typed = utils.center_text(stdscr, self.buffer)
+        stdscr.addstr(below, 0, typed, utils.Palette.white() | curses.A_BOLD)
+        if self.placeable < len(self.buffer):  # Gray out the letters that do not fit
+            start = typed.index(self.buffer) + self.placeable
+            stdscr.addstr(below, start, self.buffer[self.placeable:], utils.Palette.gray())
         stdscr.addstr(below + 2, 0, utils.center_text(stdscr, self.message), utils.Palette.white())
         progress = f"{len(self.found)} of {len(self.answers)} theme words found"
         stdscr.addstr(below + 3, 0, utils.center_text(stdscr, progress), utils.Palette.gray())
