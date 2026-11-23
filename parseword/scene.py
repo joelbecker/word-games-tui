@@ -24,16 +24,19 @@ ENTER_KEYS = (curses.KEY_ENTER, 10, 13)
 
 def wrap(parts, width):
     """Wrap [(text, attr), ...] at part boundaries into lines of at most width
-    columns (a part longer than width gets a line of its own and is clipped)."""
+    columns (a part longer than width gets a line of its own and is clipped).
+
+    A part may be (text, attr, space_attr): space_attr styles the space before
+    it, so a highlight or underline can run unbroken across several words."""
     lines, line, used = [], [], 0
-    for text, attr in parts:
+    for text, attr, *space in parts:
         needed = len(text) + (1 if line else 0)
         if line and used + needed > width:
             lines.append(line)
             line, used = [], 0
             needed = len(text)
         if line:
-            line.append((" ", utils.Palette.white()))
+            line.append((" ", space[0] if space else utils.Palette.white()))
         line.append((text, attr))
         used += needed
     if line:
@@ -159,8 +162,24 @@ class ParsewordScene:
         return i - self.selection[0] in self.groups[group][1]
 
     def _phrase_parts(self, show_cursor=True):
-        return [(t.text.upper() if t.transformed else t.text, self._token_attr(i, t, show_cursor))
+        return [(t.text.upper() if t.transformed else t.text, self._token_attr(i, t, show_cursor),
+                 self._space_attr(i))
                 for i, t in enumerate(self.game.tokens)]
+
+    def _space_attr(self, i):
+        """The space before token i shares the selection highlight or the
+        definition underline when the words on both sides have it."""
+        tokens = self.game.tokens
+        if i == 0:
+            return utils.Palette.white()
+        if i - 1 in self.selection and i in self.selection:
+            attr = utils.Palette.red() | curses.A_REVERSE
+            if self.groups is not None and self._is_indicator(i - 1) and self._is_indicator(i):
+                attr |= curses.A_UNDERLINE
+            return attr
+        if tokens[i - 1].definition and tokens[i].definition:
+            return utils.Palette.white() | curses.A_UNDERLINE
+        return utils.Palette.white()
 
     def _option_lines(self, groups, width, choosing, empty="No moves for this selection"):
         """The moves for the selection; the cursor is shown while choosing."""
@@ -202,7 +221,9 @@ class ParsewordScene:
         for step in self.game.steps:
             words = step["before"].split()
             indicator = set(step["indicator"].split()) if step.get("indicator") else set()
-            parts = [(w, utils.Palette.white() | (curses.A_UNDERLINE if w in indicator else 0)) for w in words]
+            parts = [(w, utils.Palette.white() | (curses.A_UNDERLINE if w in indicator else 0),
+                      utils.Palette.white() | (curses.A_UNDERLINE if k and w in indicator and words[k - 1] in indicator else 0))
+                     for k, w in enumerate(words)]
             parts += [("->", utils.Palette.gray()), (step["result"].lower(), utils.Palette.red())]
             lines += wrap(parts, width)
         return lines
