@@ -15,8 +15,9 @@ not the end of the story.
 - **New UI goes through the user.** The user designs layouts as mockups
   (`<game>/mockup*.txt`). Follow the mockup exactly. If one is ambiguous or
   seems wrong, ask instead of improvising. Don't invent new screens or layouts.
-- **Commit directly to `main`** as you go, without asking. Don't create branches
-  unless asked. **Always ask before pushing.**
+- **Commit directly to `main` and push to `origin/main`** as you go, without
+  asking. The user pulls the latest version onto the BlackBerry, so every commit
+  should be on `origin/main`. Don't create branches unless asked.
 - **Linear:** the project is "word-games-tui" (team "Joel Becker Personal", key
   `J`). Move a ticket to In Progress when you start it and to Done when it works
   locally. Done means working locally; the user tests on the BlackBerry
@@ -43,12 +44,6 @@ just reset   # delete saved puzzles and progress (or: just reset <game>); keeps 
   h/l move left/right. j/k are for vertical movement (or switching kinds/groups),
   not a second left/right. Every game shows its controls on `0`; keep the
   descriptions short and general ("enter: show moves / confirm").
-- **Open issue: delete/backspace sometimes doesn't register in Termux.** The key
-  sends 127, and curses receives it when `keypad(False)`, but with keypad on
-  (as `curses.wrapper` sets it) it's sometimes held back or lost. The suspected
-  cause is a terminfo sequence starting with 127. The user is collecting the
-  `infocmp` output to confirm. Parseword accepts `KEY_DC` as well; the other
-  games accept `KEY_BACKSPACE`, 127 and 8 (Wordle: only `KEY_BACKSPACE` and 127).
 
 ## Layout
 
