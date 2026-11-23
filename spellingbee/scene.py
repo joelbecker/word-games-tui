@@ -148,7 +148,10 @@ class SpellingBeeGame:
         if full_update:
             stdscr.clear()
         
-        vertical_offset = math.floor(utils.vertical_buffer(GRID_HEIGHT, utils.display_rows(stdscr)) * 0.8)
+        # Grid, typed word, message, score; the spacers go on short screens
+        vertical_offset, gap = utils.fit_rows(stdscr, GRID_HEIGHT + 3, 2)
+        input_row = vertical_offset + GRID_HEIGHT + gap
+        message_row = input_row + 1 + gap
         horizontal_offset = utils.horizontal_buffer(GRID_WIDTH, utils.display_cols(stdscr))
         
         if full_update or reshuffle:
@@ -178,13 +181,13 @@ class SpellingBeeGame:
                 color = utils.Palette.yellow()
             else:
                 color = utils.Palette.white()
-            stdscr.addstr(vertical_offset + GRID_HEIGHT + 1, i, c, color)
+            stdscr.addstr(input_row, i, c, color)
 
         if full_update or guess_submitted:
             score_display = f"{self.score / self.max_score:.2%} / {self.rank} / {self.score} pts"
             message_color = utils.Palette.yellow() if highlight else utils.Palette.white()
-            stdscr.addstr(vertical_offset + GRID_HEIGHT + 3, 0, utils.center_text(stdscr, self.message), message_color)
-            stdscr.addstr(vertical_offset + GRID_HEIGHT + 4, 0, utils.center_text(stdscr, score_display), utils.Palette.gray())
+            stdscr.addstr(message_row, 0, utils.center_text(stdscr, self.message), message_color)
+            stdscr.addstr(message_row + 1, 0, utils.center_text(stdscr, score_display), utils.Palette.gray())
         
         stdscr.refresh()
 

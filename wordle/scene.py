@@ -69,7 +69,11 @@ class WordleGame:
     
     def update_display(self, stdscr, buffer, full_update=False):
         hbuffer = utils.horizontal_buffer(5, utils.display_cols(stdscr))
-        vbuffer = utils.vertical_buffer(17, utils.display_rows(stdscr))
+        # Guesses on every other row, keyboard, message; packed tighter on short screens
+        step = 2 if utils.display_rows(stdscr) >= 17 else 1
+        guess_rows = 5 * step + 1
+        vbuffer, gap = utils.fit_rows(stdscr, guess_rows + 4, 2)
+        keyboard_top = vbuffer + guess_rows + gap
         hbuffer_keyboard = utils.horizontal_buffer(len(KEYBOARD[0]), utils.display_cols(stdscr))
         
         if full_update:
@@ -80,13 +84,13 @@ class WordleGame:
                 clue = self.generate_clue(self.secret, self.guesses[i])
                 for idx in range(len(clue)):
                     letter, color = clue[idx]
-                    stdscr.addstr(vbuffer+i*2, hbuffer+idx, letter.upper(), color)
+                    stdscr.addstr(vbuffer+i*step, hbuffer+idx, letter.upper(), color)
         
         for i in range(5):
             if i < len(buffer):
-                stdscr.addstr(vbuffer+self.count*2, hbuffer+i, buffer[i].upper(), utils.Palette.white())
+                stdscr.addstr(vbuffer+self.count*step, hbuffer+i, buffer[i].upper(), utils.Palette.white())
             else:
-                stdscr.addstr(vbuffer+self.count*2, hbuffer+i, " ", utils.Palette.white())
+                stdscr.addstr(vbuffer+self.count*step, hbuffer+i, " ", utils.Palette.white())
 
         for i in range(len(KEYBOARD)):
             for j in range(len(KEYBOARD[i])):
@@ -98,10 +102,10 @@ class WordleGame:
                     color = utils.Palette.gray()
                 else:
                     color = utils.Palette.white()
-                stdscr.addstr(vbuffer+12+i, hbuffer_keyboard+j, KEYBOARD[i][j].upper(), color)
+                stdscr.addstr(keyboard_top+i, hbuffer_keyboard+j, KEYBOARD[i][j].upper(), color)
 
         if full_update:
-            stdscr.addstr(vbuffer+16, 0, utils.justify(self.message, len(self.message), utils.display_cols(stdscr)), utils.Palette.white())
+            stdscr.addstr(keyboard_top+3+gap, 0, utils.justify(self.message, len(self.message), utils.display_cols(stdscr)), utils.Palette.white())
         
         stdscr.refresh()
 

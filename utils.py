@@ -4,11 +4,19 @@ import curses
 WIDTH = 50
 
 
-class SafeWindow:
-    """Wraps the curses screen so drawing outside it never crashes.
+MAX_ROWS = 24  # Screens are laid out in a box of at most this size,
+MAX_COLS = 60  # centred on the terminal
 
-    Text above, below or left of the screen is dropped, and text running
-    past the right edge is cut off. Everything else is passed through.
+
+class SafeWindow:
+    """Wraps the curses screen so that every scene draws in a box of at most
+    MAX_ROWS x MAX_COLS centred on the terminal, and drawing outside that box
+    never crashes.
+
+    Coordinates passed to addstr are relative to the box, and getmaxyx returns
+    the box's size, so scenes centre their content within it. Text above, below
+    or left of the box is dropped, and text running past its right edge is cut
+    off. Everything else is passed through.
     """
 
     def __init__(self, window):
@@ -17,17 +25,26 @@ class SafeWindow:
     def __getattr__(self, name):
         return getattr(self._window, name)
 
+    def _box(self):
+        """(top, left, rows, cols) of the content box on the terminal."""
+        rows, cols = self._window.getmaxyx()
+        box_rows, box_cols = min(rows, MAX_ROWS), min(cols, MAX_COLS)
+        return (rows - box_rows) // 2, (cols - box_cols) // 2, box_rows, box_cols
+
+    def getmaxyx(self):
+        return self._box()[2:]
+
     def addstr(self, *args):
         if len(args) >= 3 and isinstance(args[0], int) and isinstance(args[1], int):
             y, x, text, *attr = args
-            rows, cols = self._window.getmaxyx()
+            top, left, rows, cols = self._box()
             text = str(text)
             if x < 0:
                 text, x = text[-x:], 0
             text = text[:max(0, cols - x)]
             if not text or not 0 <= y < rows:
                 return
-            args = (y, x, text, *attr)
+            args = (top + y, left + x, text, *attr)
         try:
             self._window.addstr(*args)
         except curses.error:
@@ -54,11 +71,11 @@ def center_text(stdscr, text):
     return justify(text, justify='center', width=display_cols(stdscr))
 
 def display_rows(stdscr):
-    return min(stdscr.getmaxyx()[0], 24)
+    return min(stdscr.getmaxyx()[0], MAX_ROWS)
     
 
 def display_cols(stdscr):
-    return min(stdscr.getmaxyx()[1], 60)
+    return min(stdscr.getmaxyx()[1], MAX_COLS)
 
 
 def vertical_buffer(content_rows, display_rows):
@@ -67,6 +84,17 @@ def vertical_buffer(content_rows, display_rows):
 
 def horizontal_buffer(content_cols, display_cols):
     return (display_cols - content_cols) // 2
+
+
+def fit_rows(stdscr, content_rows, gaps):
+    """Centre a screen of content_rows rows plus `gaps` blank spacer rows.
+
+    Returns (top, gap): gap is 1 when everything fits and 0 on screens too
+    short for the spacers, so content is never pushed off the screen by them.
+    """
+    rows = display_rows(stdscr)
+    gap = 1 if content_rows + gaps <= rows else 0
+    return max(0, vertical_buffer(content_rows + gaps * gap, rows)), gap
 
 
 class Palette:

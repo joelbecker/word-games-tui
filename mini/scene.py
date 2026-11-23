@@ -222,14 +222,16 @@ class Crossword:
         y_end = row_to_y(self.rows - 1)[1]
         x_end = col_to_x(self.cols - 1)[1]
         hbuffer = utils.horizontal_buffer(x_end, utils.display_cols(stdscr))
-        vbuffer = utils.vertical_buffer(y_end, utils.display_rows(stdscr))
+        # Timer, grid, clue (up to 2 lines); the spacers go on short screens
+        top, gap = utils.fit_rows(stdscr, 1 + y_end + 2, 2)
+        vbuffer = top + 1 + gap
 
         if full_update:
             stdscr.clear()
 
         minutes, seconds = divmod(timer_seconds, 60)
         timer_display = f"{int(minutes):02}:{int(seconds):02}"
-        stdscr.addstr(1, (utils.display_cols(stdscr) - 5)//2, timer_display)
+        stdscr.addstr(top, (utils.display_cols(stdscr) - 5)//2, timer_display)
 
         for y in range(y_start, y_end):
             i = y // 2
@@ -262,16 +264,14 @@ class Crossword:
                     raise e
 
         if message != self.prev_message:
-            text_width = x_end + hbuffer
-            min_lines = 3
-            wrapped_lines = textwrap.wrap(message, width=text_width)
-            wrapped_lines.extend([" ".center(text_width)] * (min_lines - len(wrapped_lines)))
+            min_lines = 3  # Blank lines clear a longer previous clue
+            wrapped_lines = textwrap.wrap(message, width=utils.display_cols(stdscr) - 2)
+            wrapped_lines.extend([""] * (min_lines - len(wrapped_lines)))
             for i, line in enumerate(wrapped_lines):
-                centered_line = ' ' * (hbuffer // 2) + line.center(text_width, ' ')
                 stdscr.addstr(
-                    y_end + vbuffer + 1 + i,
+                    y_end + vbuffer + gap + i,
                     0,
-                    centered_line,
+                    utils.center_text(stdscr, line),
                     utils.Palette.white()
                 )
 

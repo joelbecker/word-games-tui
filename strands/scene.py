@@ -146,9 +146,10 @@ class StrandsGame:
         grid_height = (self.rows - 1) * CELL_HEIGHT + 1
         display_cols = utils.display_cols(stdscr)
         # strands/mockup2.txt: clue, grid, typed word, then feedback and progress
-        top = utils.vertical_buffer(grid_height + 7, utils.display_rows(stdscr))
+        # Clue, grid, typed word, feedback, progress; the spacers go on short screens
+        top, gap = utils.fit_rows(stdscr, grid_height + 4, 3)
         left = utils.horizontal_buffer(grid_width, display_cols)
-        grid_top = top + 2
+        grid_top = top + 1 + gap
 
         cell_attrs = {}
         connectors = {}
@@ -172,15 +173,15 @@ class StrandsGame:
             self._connectors(path, color | curses.A_BOLD, connectors)
 
         stdscr.addstr(top, 0, utils.center_text(stdscr, self.clue), utils.Palette.white())
-        below = grid_top + grid_height + 1
+        below = grid_top + grid_height + gap
         typed = utils.center_text(stdscr, self.buffer)
         stdscr.addstr(below, 0, typed, utils.Palette.white() | curses.A_BOLD)
         if self.placeable < len(self.buffer):  # Gray out the letters that do not fit
             start = typed.index(self.buffer) + self.placeable
             stdscr.addstr(below, start, self.buffer[self.placeable:], utils.Palette.gray())
-        stdscr.addstr(below + 2, 0, utils.center_text(stdscr, self.message), utils.Palette.white())
+        stdscr.addstr(below + 1 + gap, 0, utils.center_text(stdscr, self.message), utils.Palette.white())
         progress = f"{len(self.found)} of {len(self.answers)} theme words found"
-        stdscr.addstr(below + 3, 0, utils.center_text(stdscr, progress), utils.Palette.gray())
+        stdscr.addstr(below + 2 + gap, 0, utils.center_text(stdscr, progress), utils.Palette.gray())
 
         for r in range(self.rows):
             for c in range(self.cols):

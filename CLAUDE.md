@@ -34,9 +34,13 @@ just reset   # delete saved puzzles and progress (or: just reset <game>); keeps 
 
 ## Termux / BlackBerry constraints
 
-- The display is capped at **60 columns x 24 rows** (`utils.display_cols`/`display_rows`).
-  Real screens can be narrower, so text must fit or wrap. Check narrow widths
-  (around 34 columns) for anything with long lines.
+- Every screen is laid out in a box of at most **60 columns x 24 rows**,
+  centred on the terminal by `utils.SafeWindow` (scenes draw in box
+  coordinates; `getmaxyx`, `display_cols` and `display_rows` give the box size).
+  Scenes centre their whole block in the box. Use `utils.fit_rows` so blank
+  spacer rows are dropped on short screens instead of pushing content off.
+  Check layouts at a big terminal (e.g. 100x36) and small ones (about 34-46
+  columns, 20 rows; Connections needs 20 rows for its 16 words).
 - Termux has no `/usr/bin/env`, so no `#!/usr/bin/env` shebangs in scripts or
   justfile recipes. Use one-line sh recipes.
 - Keep syntax compatible with older Pythons: use `Optional[str]`, not `str | None`.
