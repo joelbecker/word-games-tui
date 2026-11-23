@@ -153,7 +153,7 @@ class StrandsGame:
         cell_attrs = {}
         connectors = {}
         for word in self.found:
-            color = utils.Palette.yellow() if word == self.spangram else utils.Palette.red()
+            color = utils.Palette.yellow() if word == self.spangram else utils.Palette.teal()
             for cell in self.answers[word]:
                 cell_attrs[cell] = color
             self._connectors(self.answers[word], color, connectors)
@@ -211,7 +211,7 @@ def strands_scene(stdscr):
             if key in (curses.KEY_BACKSPACE, 127, 8):
                 game.backspace()
             elif key == info_panel.CONTROLS_KEY:
-                info_panel.show_controls(stdscr, "Strands", CONTROLS, utils.Palette.red())
+                info_panel.show_controls(stdscr, "Strands", CONTROLS, utils.Palette.teal())
             elif key in (curses.KEY_ENTER, 10, 13):
                 if game.guess():
                     store.save_progress(record, {"found": game.found})

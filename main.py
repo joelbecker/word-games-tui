@@ -40,9 +40,9 @@ def main(stdscr):
         WordGame("wordle", wordle_scene, Palette.green()),
         WordGame("connections", connections_scene, Palette.purple()),
         WordGame("mini", mini_scene, Palette.blue()),
-        WordGame("strands", strands_scene, Palette.red()),
+        WordGame("strands", strands_scene, Palette.teal()),
         WordGame("spellingbee", spellingbee_scene, Palette.yellow()),
-        WordGame("parseword", parseword_scene, Palette.teal()),
+        WordGame("parseword", parseword_scene, Palette.red()),
     ]
     
     current_option = 0

@@ -143,11 +143,11 @@ class ParsewordScene:
     # Display
 
     def _token_attr(self, i, token, show_cursor=True):
-        attr = utils.Palette.teal() if token.transformed else utils.Palette.white()
+        attr = utils.Palette.red() if token.transformed else utils.Palette.white()
         if token.definition:
             attr |= curses.A_UNDERLINE
         if i in self.selection:
-            attr = utils.Palette.teal() | curses.A_REVERSE
+            attr = utils.Palette.red() | curses.A_REVERSE
             if self.groups is not None and self._is_indicator(i):
                 attr |= curses.A_UNDERLINE
         if show_cursor and i == self.cursor and self.groups is None:
@@ -203,7 +203,7 @@ class ParsewordScene:
             words = step["before"].split()
             indicator = set(step["indicator"].split()) if step.get("indicator") else set()
             parts = [(w, utils.Palette.white() | (curses.A_UNDERLINE if w in indicator else 0)) for w in words]
-            parts += [("->", utils.Palette.gray()), (step["result"].lower(), utils.Palette.teal())]
+            parts += [("->", utils.Palette.gray()), (step["result"].lower(), utils.Palette.red())]
             lines += wrap(parts, width)
         return lines
 
@@ -282,7 +282,7 @@ def parseword_scene(stdscr):
         while True:
             key = stdscr.getch()
             if key == info_panel.CONTROLS_KEY:
-                info_panel.show_controls(stdscr, "Parseword", CONTROLS, utils.Palette.teal())
+                info_panel.show_controls(stdscr, "Parseword", CONTROLS, utils.Palette.red())
             elif key == curses.KEY_RESIZE:
                 pass
             else:
